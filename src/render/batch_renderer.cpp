@@ -35,9 +35,11 @@ namespace consts {
 inline constexpr uint32_t maxDrawsPerView = 512*4;
 
 
+inline constexpr uint32_t maxTextureDim = 16384;
 inline constexpr uint32_t maxNumImagesX = 16;
+inline constexpr uint32_t maxNumImagesY = 16;
 inline constexpr uint32_t maxNumImagesPerTarget = 
-    maxNumImagesX * maxNumImagesX;
+    maxNumImagesX * maxNumImagesY;
 
 
 // 256, is the number of views per image we can have
@@ -68,12 +70,12 @@ static HeapArray<LayeredTarget> makeLayeredTargets(uint32_t width,
                                                    vk::MemoryAllocator &alloc,
                                                    bool depth_only)
 {
-    uint32_t max_image_dim = consts::maxNumImagesX * width;
-
+    uint32_t max_image_dim_x = std::min(consts::maxTextureDim, consts::maxNumImagesX * width);
+    uint32_t max_image_dim_y = std::min(consts::maxTextureDim, consts::maxNumImagesY * height);
     // Each view is going to be stored in one section of the layer (one viewport of
     // the layer). Each image, will have as many layers as possible.
-    uint32_t max_images_x = max_image_dim / width;
-    uint32_t max_images_y = max_image_dim / height;
+    uint32_t max_images_x = max_image_dim_x / width;
+    uint32_t max_images_y = max_image_dim_y / height;
 
     uint32_t max_views_per_target = max_images_x * max_images_y;
 
@@ -818,12 +820,13 @@ static void makeBatchFrame(vk::Device& dev,
 
     HeapArray<DrawCommandPackage> draw_packages(consts::numDrawCmdBuffers);
     for (int i = 0; i < (int)consts::numDrawCmdBuffers; ++i) {
-        uint32_t max_image_dim = consts::maxNumImagesX * view_width;
+        uint32_t max_image_dim_x = std::min(consts::maxTextureDim, consts::maxNumImagesX * view_width);
+        uint32_t max_image_dim_y = std::min(consts::maxTextureDim, consts::maxNumImagesY * view_height);
 
         // Each view is going to be stored in one section of the layer (one viewport of
         // the layer). Each image, will have as many layers as possible.
-        uint32_t max_images_x = max_image_dim / view_width;
-        uint32_t max_images_y = max_image_dim / view_height;
+        uint32_t max_images_x = max_image_dim_x / view_width;
+        uint32_t max_images_y = max_image_dim_y / view_height;
 
         uint32_t max_views_per_target = max_images_x * max_images_y;
 
@@ -1135,7 +1138,8 @@ static void issueRasterization(vk::Device &dev,
                                  draw_descriptors.data(), 
                                  0, nullptr);
 
-    uint32_t max_num_image_x = consts::maxNumImagesX;
+    uint32_t max_image_dim_x = std::min(consts::maxTextureDim, consts::maxNumImagesX * target.viewWidth);
+    uint32_t max_num_image_x = max_image_dim_x / target.viewWidth;
 
     for (uint32_t i = 0; i < target.numViews; ++i) {
         uint32_t image_x = i % max_num_image_x;
@@ -1201,10 +1205,11 @@ static void issueDeferred(vk::Device &dev,
     (void)asset_set;
     (void)asset_mat_tex_set;
 
-    uint32_t max_image_dim = consts::maxNumImagesX * view_width;
+    uint32_t max_image_dim_x = std::min(consts::maxTextureDim, consts::maxNumImagesX * view_width);
+    uint32_t max_image_dim_y = std::min(consts::maxTextureDim, consts::maxNumImagesY * view_height);
 
-    uint32_t max_images_x = max_image_dim / view_width;
-    uint32_t max_images_y = max_image_dim / view_height;
+    uint32_t max_images_x = max_image_dim_x / view_width;
+    uint32_t max_images_y = max_image_dim_y / view_height;
 
     // The output buffer has been transitioned to general at the start of the frame.
     // The viz buffers have been transitioned to general before this happens.
