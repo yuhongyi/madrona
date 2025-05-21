@@ -75,19 +75,19 @@ struct LightDesc {
     // Intensity of the light. (1.f is default)
     float intensity;
 
-    enum Type : bool {
-        Directional = true,
-        Spotlight = false
+    enum Type : uint32_t {
+        Directional = 1,
+        Spotlight = 0
     };
 
     // Type of the light.
     Type type;
 
     // Whether the light casts a shadow.
-    bool castShadow;
+    uint32_t castShadow;
 
     // Gives ability to turn light on or off.
-    bool active;
+    uint32_t active;
 };
 
 struct LightDescDirection : math::Vector3 {

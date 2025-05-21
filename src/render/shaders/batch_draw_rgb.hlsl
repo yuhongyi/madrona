@@ -293,22 +293,23 @@ PixelOutput frag(in V2F v2f,
         //lightDataBuffer.getDimensions(num_lights);
         for (uint i = 0; i < num_lights; i++) {
             LightDesc light = lightDataBuffer[i];
+            if(!light.active)
+                continue;
             
             float3 light_dir;
-            float attenuation = 1.0;
             
-            if (light.lightDir.w < 0.5) { // Directional light
-                light_dir = normalize(-light.lightDir.xyz);
+            if (light.isDirectional) { // Directional light
+                light_dir = normalize(-light.direction.xyz);
             } else { // Spot light
-                light_dir = normalize(v2f.worldPos.xyz - light.lightDir.xyz);
-                float angle = acos(dot(normalize(light_dir), normalize(light.lightDir.xyz)));
-                if (abs(angle) > light.lightCutoff) {
+                light_dir = normalize(v2f.worldPos.xyz - light.position.xyz);
+                float angle = acos(dot(normalize(light_dir), normalize(light.direction.xyz)));
+                if (abs(angle) > light.cutoffAngle) {
                     continue;
                 }
             }
 
             float n_dot_l = max(0.0, dot(normal, light_dir));
-            totalLighting += n_dot_l;// * attenuation;
+            totalLighting += n_dot_l * light.intensity;
         }
 
         float3 lighting = totalLighting * color.rgb;

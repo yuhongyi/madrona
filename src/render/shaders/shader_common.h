@@ -208,9 +208,9 @@ struct LightDesc {
     float3 direction;
     float cutoffAngle;
     float intensity;
-    uint8_t isDirectional;
-    uint8_t castShadow;
-    uint8_t active;
+    uint32_t isDirectional;
+    uint32_t castShadow;
+    uint32_t active;
 };
 
 struct PerspectiveCameraData {
