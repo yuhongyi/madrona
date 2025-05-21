@@ -40,7 +40,7 @@ void RenderManager::readECS()
         .numViews = cur_num_views,
         .numInstances = cur_num_instances,
         .numWorlds = rctx_->num_worlds_,
-        .maxLightsPerWorld = cur_num_lights,
+        .numLights = cur_num_lights,
     };
 
     rctx_->batchRenderer->prepareForRendering(info, &rctx_->engine_interop_);
@@ -56,7 +56,7 @@ void RenderManager::batchRender()
         .numViews = cur_num_views,
         .numInstances = cur_num_instances,
         .numWorlds = rctx_->num_worlds_,
-        .maxLightsPerWorld = cur_num_lights,
+        .numLights = cur_num_lights,
     };
 
     rctx_->batchRenderer->renderViews(

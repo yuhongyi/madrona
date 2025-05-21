@@ -120,7 +120,7 @@ struct EngineInterop {
     Optional<render::vk::DedicatedBuffer> instanceOffsetsGPU;
 
     Optional<render::vk::DedicatedBuffer> lightsGPU;
-    Optional<render::vk::HostBuffer> lightOffsetsGPU;
+    Optional<render::vk::DedicatedBuffer> lightOffsetsGPU;
 
     Optional<render::vk::CudaImportedBuffer> viewsCUDA;
     Optional<render::vk::CudaImportedBuffer> viewOffsetsCUDA;
@@ -129,7 +129,7 @@ struct EngineInterop {
     Optional<render::vk::CudaImportedBuffer> instanceOffsetsCUDA;
 
     Optional<render::vk::CudaImportedBuffer> lightsCUDA;
-    Optional<render::vk::HostBuffer> lightOffsetsCUDA;
+    Optional<render::vk::CudaImportedBuffer> lightOffsetsCUDA;
 
     Optional<render::vk::DedicatedBuffer> aabbGPU;
     Optional<render::vk::CudaImportedBuffer> aabbCUDA;

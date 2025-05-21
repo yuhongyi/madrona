@@ -43,7 +43,7 @@ struct BatchRenderInfo {
     uint32_t numViews;
     uint32_t numInstances;
     uint32_t numWorlds;
-    uint32_t maxLightsPerWorld;
+    uint32_t numLights;
 };
 
 struct BatchImportedBuffers {

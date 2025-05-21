@@ -677,6 +677,9 @@ static void makeBatchFrame(vk::Device& dev,
     VkDeviceSize view_offset_size = (cfg.numWorlds) * sizeof(uint32_t);
     vk::LocalBuffer view_offsets = alloc.makeLocalBuffer(view_offset_size).value();
 
+    VkDeviceSize light_offsets_size = cfg.numWorlds * sizeof(uint32_t);
+    vk::LocalBuffer light_offsets = alloc.makeLocalBuffer(light_offsets_size).value();
+
     VkCommandPool prepare_cmdpool = vk::makeCmdPool(dev, dev.gfxQF);
     VkCommandPool render_cmdpool = vk::makeCmdPool(dev, dev.gfxQF);
     VkCommandBuffer prepare_cmdbuf = vk::makeCmdBuffer(dev, prepare_cmdpool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
@@ -1778,7 +1781,7 @@ void BatchRenderer::prepareForRendering(BatchRenderInfo info,
     }
 
     { // Import the lights
-        VkDeviceSize num_lights_bytes = info.numWorlds * info.maxLightsPerWorld *
+        VkDeviceSize num_lights_bytes = info.numLights *
             sizeof(shader::LightDesc);
 
         VkBufferCopy lights_data_copy = {
