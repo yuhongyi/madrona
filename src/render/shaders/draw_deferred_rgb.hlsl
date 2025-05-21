@@ -38,7 +38,7 @@ StructuredBuffer<uint32_t> instanceOffsets;
 
 // Lighting
 [[vk::binding(0, 3)]]
-StructuredBuffer<DirectionalLight> lights;
+StructuredBuffer<LightDesc> lights;
 
 [[vk::binding(1, 3)]]
 Texture2D<float4> transmittanceLUT;

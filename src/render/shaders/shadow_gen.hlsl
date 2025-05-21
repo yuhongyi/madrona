@@ -11,7 +11,7 @@ RWStructuredBuffer<ShadowViewData> shadowViewDataBuffer;
 StructuredBuffer<PackedViewData> flycamBuffer;
 
 [[vk::binding(2, 0)]]
-StructuredBuffer<DirectionalLight> lights;
+StructuredBuffer<LightDesc> lights;
 
 [[vk::binding(3, 0)]]
 StructuredBuffer<PackedViewData> viewDataBuffer;

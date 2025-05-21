@@ -657,7 +657,7 @@ static void makeBatchFrame(vk::Device& dev,
                            uint32_t view_height,
                            bool depth_only)
 {
-    VkDeviceSize lights_size = InternalConfig::maxLights * sizeof(render::shader::DirectionalLight);
+    VkDeviceSize lights_size = InternalConfig::maxLights * sizeof(render::shader::LightDesc);
     vk::LocalBuffer lights = alloc.makeLocalBuffer(lights_size).value();
     vk::HostBuffer lights_staging = alloc.makeStagingBuffer(lights_size);
 
@@ -1593,33 +1593,6 @@ static void computeViewOffsets(EngineInterop *interop, uint32_t num_worlds)
     }
 }
 
-static void computeLights(EngineInterop *interop, uint32_t num_worlds, uint32_t num_lightsPerWorld)
-{
-    // TODO: Implement light color
-    static constexpr math::Vector3 defaultColor = math::Vector3(1.0f, 1.0f, 1.0f);
-
-    // Convert LightDesc to DirectionalLight
-    render::shader::DirectionalLight *lights = (render::shader::DirectionalLight *)interop->lightsCPU->ptr;
-    LightDesc *lightDescs = (LightDesc *)interop->bridge.lights;
-    printf(">>>>>>>>>num_worlds: %d, num_lightsPerWorld: %d\n", num_worlds, num_lightsPerWorld);
-    for (uint32_t i = 0; i < num_worlds * num_lightsPerWorld; ++i) {
-        if(lightDescs[i].type == LightDesc::Type::Directional) {
-            lights[i] = {
-                .lightDir = math::Vector4::fromVec3W(lightDescs[i].direction, 0.0f),
-                .color = math::Vector4::fromVec3W(defaultColor* lightDescs[i].intensity, 1.0f),
-                .lightCutoff = 0
-            };
-        }
-        else if(lightDescs[i].type == LightDesc::Type::Spotlight) {
-            lights[i] = {
-                .lightDir = math::Vector4::fromVec3W(lightDescs[i].position, 1.0f),
-                .color = math::Vector4::fromVec3W(defaultColor * lightDescs[i].intensity, 1.0f),
-                .lightCutoff = lightDescs[i].cutoff,
-            };
-        }
-    }
-}
-
 void BatchRenderer::prepareForRendering(BatchRenderInfo info,
                                         EngineInterop *interop)
 {
@@ -1654,12 +1627,11 @@ void BatchRenderer::prepareForRendering(BatchRenderInfo info,
             // Need to flush engine input state before copy
             interop->voxelInputCPU->flush(impl->dev);
         }
-    }
 
-    if (interop->lightsCPU.has_value()) {
-        printf(">>>>>>>>>info.numWorlds: %d, info.maxLightsPerWorld: %d\n", info.numWorlds, info.maxLightsPerWorld);
-        computeLights(interop, info.numWorlds, info.maxLightsPerWorld);
-        interop->lightsCPU->flush(impl->dev);
+        if (interop->lightsCPU.has_value()) {
+            interop->lightsCPU->flush(impl->dev);
+            interop->lightOffsetsCPU->flush(impl->dev);
+        }
     }
 
     BatchFrame &frame_data = impl->batchFrames[frame_index];
@@ -1757,7 +1729,7 @@ void BatchRenderer::prepareForRendering(BatchRenderInfo info,
 
     { // Import the lights
         VkDeviceSize num_lights_bytes = info.numWorlds * info.maxLightsPerWorld *
-            sizeof(shader::DirectionalLight);
+            sizeof(shader::LightDesc);
 
         VkBufferCopy lights_data_copy = {
             .srcOffset = 0, .dstOffset = 0,
@@ -1801,12 +1773,12 @@ void BatchRenderer::prepareForRendering(BatchRenderInfo info,
 
 static void packLighting(const vk::Device &dev,
                          vk::HostBuffer &light_staging_buffer,
-                         const HeapArray<render::shader::DirectionalLight> &lights)
+                         const HeapArray<render::shader::LightDesc> &lights)
 {
-    render::shader::DirectionalLight *staging = 
-        (render::shader::DirectionalLight *)light_staging_buffer.ptr;
+    render::shader::LightDesc *staging = 
+        (render::shader::LightDesc *)light_staging_buffer.ptr;
     memcpy(staging, lights.data(),
-           sizeof(render::shader::DirectionalLight) * InternalConfig::maxLights);
+           sizeof(render::shader::LightDesc) * InternalConfig::maxLights);
     light_staging_buffer.flush(dev);
 }
 
@@ -1901,7 +1873,7 @@ void BatchRenderer::renderViews(BatchRenderInfo info,
         VkBufferCopy light_copy {
             .srcOffset = 0,
             .dstOffset = 0,
-            .size = sizeof(render::shader::DirectionalLight) * InternalConfig::maxLights
+            .size = sizeof(render::shader::LightDesc) * InternalConfig::maxLights
         };
         impl->dev.dt.cmdCopyBuffer(draw_cmd, frame_data.lightingStaging.buffer,
                              frame_data.lighting.buffer,
@@ -2192,7 +2164,7 @@ void BatchRenderer::renderViews(BatchRenderInfo info,
         VkBufferCopy light_copy {
             .srcOffset = 0,
             .dstOffset = 0,
-            .size = sizeof(render::shader::DirectionalLight) * InternalConfig::maxLights
+            .size = sizeof(render::shader::LightDesc) * InternalConfig::maxLights
         };
         impl->dev.dt.cmdCopyBuffer(draw_cmd, frame_data.lightingStaging.buffer,
                              frame_data.lighting.buffer,

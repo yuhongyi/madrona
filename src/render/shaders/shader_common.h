@@ -194,10 +194,23 @@ struct ShadowViewData {
     float4 cameraForward;
 };
 
+// Deprecated
+/*
 struct DirectionalLight {
     float4 lightDir;
     float4 color;
     float lightCutoff;
+};
+*/
+
+struct LightDesc {
+    float4 position;
+    float4 direction;
+    float cutoff;
+    float intensity;
+    uint8_t type;
+    uint8_t castShadow;
+    uint8_t active;
 };
 
 struct PerspectiveCameraData {

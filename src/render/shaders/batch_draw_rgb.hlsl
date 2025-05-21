@@ -16,7 +16,7 @@ StructuredBuffer<uint32_t> instanceOffsets;
 
 // TODO: Make this part of lighting shader
 [[vk::binding(3, 0)]]
-StructuredBuffer<DirectionalLight> lightDataBuffer;
+StructuredBuffer<LightDesc> lightDataBuffer;
 
 // Draw information
 [[vk::binding(0, 1)]]
@@ -292,7 +292,7 @@ PixelOutput frag(in V2F v2f,
         uint num_lights = 1;
         //lightDataBuffer.getDimensions(num_lights);
         for (uint i = 0; i < num_lights; i++) {
-            DirectionalLight light = lightDataBuffer[i];
+            LightDesc light = lightDataBuffer[i];
             
             float3 light_dir;
             float attenuation = 1.0;

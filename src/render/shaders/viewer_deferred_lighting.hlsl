@@ -17,7 +17,7 @@ RWTexture2D<float4> gbufferPosition;
 
 // Assume stuff is Y-UP from here
 [[vk::binding(3, 0)]]
-StructuredBuffer<DirectionalLight> lights;
+StructuredBuffer<LightDesc> lights;
 
 // Atmosphere
 [[vk::binding(4, 0)]]

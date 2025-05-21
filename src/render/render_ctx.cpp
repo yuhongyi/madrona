@@ -65,7 +65,6 @@ using DrawData = render::shader::DrawData;
 using PackedInstanceData = render::shader::PackedInstanceData;
 using PackedViewData = render::shader::PackedViewData;
 using ShadowViewData = render::shader::ShadowViewData;
-using DirectionalLight = render::shader::DirectionalLight;
 using SkyData = render::shader::SkyData;
 using DensityLayer = render::shader::DensityLayer;
 
@@ -742,7 +741,7 @@ static EngineInterop setupEngineInterop(Device &dev,
     
     { // Create the lights buffer
         uint64_t num_lights_bytes = num_worlds * max_lights_per_world *
-            (int64_t)sizeof(render::shader::DirectionalLight);
+            (int64_t)sizeof(render::shader::LightDesc);
 
         if (!gpu_input) {
             lights_cpu = alloc.makeStagingBuffer(num_lights_bytes);
@@ -2182,17 +2181,6 @@ CountT RenderContext::loadObjects(Span<const imp::SourceObject> src_objs,
     loaded_assets_.emplace_back(std::move(asset_data));
 
     return 0;
-}
-
-void RenderContext::configureLighting(Span<const LightConfig> lights)
-{
-    for (int i = 0; i < lights.size(); ++i) {
-        lights_.insert(i, DirectionalLight{ 
-            math::Vector4{lights[i].dir.x, lights[i].dir.y, lights[i].dir.z, 0.0f }, 
-            math::Vector4{lights[i].color.x, lights[i].color.y, lights[i].color.z, 1.0f},
-            0.0f
-        });
-    }
 }
 
 void RenderContext::waitForIdle()
