@@ -1838,17 +1838,6 @@ void BatchRenderer::prepareForRendering(BatchRenderInfo info,
     didRender = true;
 }
 
-static void packLighting(const vk::Device &dev,
-                         vk::HostBuffer &light_staging_buffer,
-                         const HeapArray<render::shader::LightDesc> &lights)
-{
-    render::shader::LightDesc *staging = 
-        (render::shader::LightDesc *)light_staging_buffer.ptr;
-    memcpy(staging, lights.data(),
-           sizeof(render::shader::LightDesc) * InternalConfig::maxLights);
-    light_staging_buffer.flush(dev);
-}
-
 static void packSky( const vk::Device &dev,
                      vk::HostBuffer &staging)
 {
