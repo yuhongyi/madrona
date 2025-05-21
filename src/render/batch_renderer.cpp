@@ -1538,7 +1538,6 @@ static void sortInstancesAndViewsCPU(EngineInterop *interop)
 
     InstanceData *instances = (InstanceData *)interop->instancesCPU->ptr;
     PerspectiveCameraData *views = (PerspectiveCameraData *)interop->viewsCPU->ptr;
-
     { // Write the sorted array of views and instances
         for (uint32_t i = 0; i < *interop->bridge.totalNumInstances; ++i) {
             instances[i] = interop->bridge.instances[interop->iotaArrayInstancesCPU[i]];
@@ -1554,6 +1553,28 @@ static void sortInstancesAndViewsCPU(EngineInterop *interop)
             interop->sortedViewWorldIDs[i] = 
                 interop->bridge.viewsWorldIDs[interop->iotaArrayViewsCPU[i]];
         }
+    }
+}
+
+static void sortLightsCPU(EngineInterop *interop)
+{
+    for (uint32_t i = 0; i < *interop->bridge.totalNumLights; ++i) {
+        interop->iotaArrayLightOffsetsCPU[i] = i;
+    }
+
+    std::sort(interop->iotaArrayLightOffsetsCPU,
+                interop->iotaArrayLightOffsetsCPU + *interop->bridge.totalNumLights,
+                [&interop] (uint32_t a, uint32_t b) {
+                    return interop->bridge.lightOffsets[a] < interop->bridge.lightOffsets[b];
+                });
+
+    LightDesc *lights = (LightDesc *)interop->lightsCPU->ptr;
+
+    for (uint32_t i = 0; i < *interop->bridge.totalNumLights; ++i) {
+        lights[i] = interop->bridge.lights[interop->iotaArrayLightOffsetsCPU[i]];
+
+        interop->sortedLightOffsets[i] = 
+            interop->bridge.lightOffsets[interop->iotaArrayLightOffsetsCPU[i]];
     }
 }
 
@@ -1589,6 +1610,24 @@ static void computeViewOffsets(EngineInterop *interop, uint32_t num_worlds)
 
         if (current_world_id != prev_world_id) {
             viewOffsets[current_world_id] = i;
+        }
+    }
+}
+
+static void computeLightOffsets(EngineInterop *interop, uint32_t num_worlds)
+{
+    uint32_t *lightOffsets = (uint32_t *)interop->lightOffsetsCPU->ptr;
+
+    for (int i = 0; i < (int)num_worlds; ++i) {
+        lightOffsets[i] = 0;
+    }
+
+    for (uint32_t i = 1; i < *interop->bridge.totalNumLights; ++i) {
+        uint32_t current_world_id = (uint32_t)(interop->sortedLightOffsets[i] >> 32);
+        uint32_t prev_world_id = (uint32_t)(interop->sortedLightOffsets[i-1] >> 32);
+
+        if (current_world_id != prev_world_id) {
+            lightOffsets[current_world_id] = i;
         }
     }
 }
@@ -1629,6 +1668,16 @@ void BatchRenderer::prepareForRendering(BatchRenderInfo info,
         }
 
         if (interop->lightsCPU.has_value()) {
+            *interop->bridge.totalNumLights = interop->bridge.totalNumLightsCPUInc->load_acquire();
+
+            info.numLights = *interop->bridge.totalNumLights;
+
+            interop->bridge.totalNumLightsCPUInc->store_release(0);
+
+            // First, need to perform the sorts
+            sortLightsCPU(interop);
+            computeLightOffsets(interop, info.numWorlds);
+
             interop->lightsCPU->flush(impl->dev);
             interop->lightOffsetsCPU->flush(impl->dev);
         }
@@ -1741,6 +1790,19 @@ void BatchRenderer::prepareForRendering(BatchRenderInfo info,
                              1, &lights_data_copy);
     }
 
+    { // Import the light offsets
+        VkDeviceSize num_offsets_bytes = info.numWorlds *
+            sizeof(int32_t);
+
+        VkBufferCopy offsets_data_copy = {
+            .srcOffset = 0, .dstOffset = 0,
+            .size = num_offsets_bytes
+        };
+
+        impl->dev.dt.cmdCopyBuffer(draw_cmd, interop->lightOffsetsHdl,
+                             batch_buffers.lightOffsets.buffer,
+                             1, &offsets_data_copy);
+    }
 
     REQ_VK(impl->dev.dt.endCommandBuffer(draw_cmd));
 
@@ -1869,6 +1931,7 @@ void BatchRenderer::renderViews(BatchRenderInfo info,
     ////////////////////////////////////////////////////////////////
 
     { // Import sky and lighting information first
+    /*
         packLighting(impl->dev, frame_data.lightingStaging, rctx.lights_);
         VkBufferCopy light_copy {
             .srcOffset = 0,
@@ -1878,6 +1941,7 @@ void BatchRenderer::renderViews(BatchRenderInfo info,
         impl->dev.dt.cmdCopyBuffer(draw_cmd, frame_data.lightingStaging.buffer,
                              frame_data.lighting.buffer,
                              1, &light_copy);
+    */
 
         packSky(impl->dev, frame_data.skyInputStaging);
         VkBufferCopy sky_copy {

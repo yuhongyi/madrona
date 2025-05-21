@@ -584,6 +584,7 @@ static EngineInterop setupEngineInterop(Device &dev,
     auto instance_offsets_cpu = Optional<render::vk::HostBuffer>::none();
     auto aabb_cpu = Optional<render::vk::HostBuffer>::none();
     auto lights_cpu = Optional<render::vk::HostBuffer>::none();
+    auto light_offsets_cpu = Optional<render::vk::HostBuffer>::none();
 
 #ifdef MADRONA_VK_CUDA_SUPPORT
     auto views_gpu = Optional<render::vk::DedicatedBuffer>::none();
@@ -611,20 +612,20 @@ static EngineInterop setupEngineInterop(Device &dev,
     VkBuffer instance_offsets_hdl = VK_NULL_HANDLE;
     VkBuffer aabb_hdl = VK_NULL_HANDLE;
     VkBuffer lights_hdl = VK_NULL_HANDLE;
+    VkBuffer light_offsets_hdl = VK_NULL_HANDLE;
 
     void *views_base = nullptr;
     void *view_offsets_base = nullptr;
-
     void *instances_base = nullptr;
     void *instance_offsets_base = nullptr;
+    void *lights_base = nullptr;
+    void *light_offsets_base = nullptr;
 
     void *aabb_base = nullptr;
 
-    void *lights_base = nullptr;
-
     void *world_ids_instances_base = nullptr;
     void *world_ids_views_base = nullptr;
-
+    void *world_ids_lights_base = nullptr;
 
     { // Create the views buffer
         uint64_t num_views_bytes = num_worlds * max_views_per_world *
@@ -671,6 +672,29 @@ static EngineInterop setupEngineInterop(Device &dev,
 
             instances_hdl = instances_gpu->buf.buffer;
             instances_base = (char *)instances_cuda->getDevicePointer();
+#endif
+        }
+    }
+    
+    { // Create the lights buffer
+        uint64_t num_lights_bytes = num_worlds * max_lights_per_world *
+            (int64_t)sizeof(render::shader::LightDesc);
+
+        if (!gpu_input) {
+            lights_cpu = alloc.makeStagingBuffer(num_lights_bytes);
+            lights_hdl = lights_cpu->buffer;
+            lights_base = malloc(sizeof(render::shader::LightDesc) * num_worlds * max_lights_per_world);
+        }
+        else
+        {
+#ifdef MADRONA_VK_CUDA_SUPPORT
+            lights_gpu = alloc.makeDedicatedBuffer(
+                num_lights_bytes, false, true);
+            lights_cuda.emplace(dev, lights_gpu->mem,
+                num_lights_bytes);
+
+            lights_hdl = lights_gpu->buf.buffer;
+            lights_base = (char *)lights_cuda->getDevicePointer();
 #endif
         }
     }
@@ -738,26 +762,24 @@ static EngineInterop setupEngineInterop(Device &dev,
 #endif
         }
     }
-    
-    { // Create the lights buffer
-        uint64_t num_lights_bytes = num_worlds * max_lights_per_world *
-            (int64_t)sizeof(render::shader::LightDesc);
+
+    { // Create the light offsets buffer
+        uint64_t num_offsets_bytes = (num_worlds+1) * sizeof(int32_t);
 
         if (!gpu_input) {
-            lights_cpu = alloc.makeStagingBuffer(num_lights_bytes);
-            lights_hdl = lights_cpu->buffer;
-            lights_base = lights_cpu->ptr;
-        }
-        else
-        {
+            light_offsets_cpu = alloc.makeStagingBuffer(num_offsets_bytes);
+            light_offsets_hdl = light_offsets_cpu->buffer;
+            light_offsets_base = light_offsets_cpu->ptr;
+        } else {
 #ifdef MADRONA_VK_CUDA_SUPPORT
-            lights_gpu = alloc.makeDedicatedBuffer(
-                num_lights_bytes, false, true);
-            lights_cuda.emplace(dev, lights_gpu->mem,
-                num_lights_bytes);
+            light_offsets_gpu = alloc.makeDedicatedBuffer(
+                num_offsets_bytes, false, true);
 
-            lights_hdl = lights_gpu->buf.buffer;
-            lights_base = (char *)lights_cuda->getDevicePointer();
+            light_offsets_cuda.emplace(dev, light_offsets_gpu->mem,
+                num_offsets_bytes);
+
+            light_offsets_hdl = light_offsets_gpu->buf.buffer;
+            light_offsets_base = (char *)light_offsets_cuda->getDevicePointer();
 #endif
         }
     }
@@ -830,6 +852,7 @@ static EngineInterop setupEngineInterop(Device &dev,
         .lights = (LightDesc *)lights_base,
         .instanceOffsets = (int32_t *)instance_offsets_base,
         .viewOffsets = (int32_t *)view_offsets_base,
+        .lightOffsets = (int32_t *)light_offsets_base,
         .totalNumViews = total_num_views_readback,
         .totalNumInstances = total_num_instances_readback,
         .totalNumLights = total_num_lights_readback,
@@ -838,11 +861,13 @@ static EngineInterop setupEngineInterop(Device &dev,
         .totalNumLightsCPUInc = total_num_lights_cpu_inc,
         .instancesWorldIDs = (uint64_t *)world_ids_instances_base,
         .viewsWorldIDs = (uint64_t *)world_ids_views_base,
+        .lightWorldIDs = (uint64_t *)world_ids_lights_base,
         .renderWidth = (int32_t)render_width,
         .renderHeight = (int32_t)render_height,
         .voxels = voxel_buffer_ptr,
         .maxViewsPerworld = max_views_per_world,
         .maxInstancesPerWorld = max_instances_per_world,
+        .maxLightsPerWorld = max_lights_per_world,
         .isGPUBackend = gpu_input
     };
 

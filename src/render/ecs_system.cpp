@@ -43,7 +43,7 @@ struct RenderingSystemState {
     // Also only used when on the CPU backend
     uint64_t *instanceWorldIDsCPU;
     uint64_t *viewWorldIDsCPU;
-
+    uint64_t *lightWorldIDsCPU;
     MeshBVH *bvhs;
     uint32_t numBVHs;
 
@@ -490,11 +490,14 @@ void registerTypes(ECSRegistry &registry,
             bridge->instanceOffsets);
         state_mgr->setArchetypeWorldOffsets<RenderCameraArchetype>(
             bridge->viewOffsets);
+        state_mgr->setArchetypeWorldOffsets<LightArchetype>(
 
         state_mgr->setArchetypeComponent<RenderableArchetype, InstanceData>(
             bridge->instances);
         state_mgr->setArchetypeComponent<RenderCameraArchetype, PerspectiveCameraData>(
             bridge->views);
+        state_mgr->setArchetypeComponent<LightArchetype, LightDesc>(
+            bridge->lights);
         state_mgr->setArchetypeComponent<RenderableArchetype, TLBVHNode>(
             bridge->aabbs);
     }
@@ -649,6 +652,7 @@ void init(Context &ctx,
         system_state.lightsCPU = bridge->lights;
         system_state.instanceWorldIDsCPU = bridge->instancesWorldIDs;
         system_state.viewWorldIDsCPU = bridge->viewsWorldIDs;
+        system_state.lightWorldIDsCPU = bridge->lightWorldIDs;
 #endif
 
         system_state.aspectRatio = 

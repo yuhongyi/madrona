@@ -53,7 +53,7 @@ struct RenderContext {
 
     EngineInterop engine_interop_;
 
-    HeapArray<render::shader::LightDesc> lights_;
+    //HeapArray<render::shader::LightDesc> lights_;
 
     DynArray<AssetData> loaded_assets_;
 
