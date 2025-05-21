@@ -599,11 +599,14 @@ static EngineInterop setupEngineInterop(Device &dev,
     auto instance_offsets_gpu = Optional<render::vk::DedicatedBuffer>::none();
     auto instance_offsets_cuda = Optional<render::vk::CudaImportedBuffer>::none();
 
-    auto aabb_gpu = Optional<render::vk::DedicatedBuffer>::none();
-    auto aabb_cuda = Optional<render::vk::CudaImportedBuffer>::none();
-
     auto lights_gpu = Optional<render::vk::DedicatedBuffer>::none();
     auto lights_cuda = Optional<render::vk::CudaImportedBuffer>::none();
+
+    auto light_offsets_gpu = Optional<render::vk::DedicatedBuffer>::none();
+    auto light_offsets_cuda = Optional<render::vk::CudaImportedBuffer>::none();
+
+    auto aabb_gpu = Optional<render::vk::DedicatedBuffer>::none();
+    auto aabb_cuda = Optional<render::vk::CudaImportedBuffer>::none();
 #endif
 
     VkBuffer views_hdl = VK_NULL_HANDLE;
