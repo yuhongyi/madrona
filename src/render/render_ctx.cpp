@@ -1331,7 +1331,6 @@ RenderContext::RenderContext(
           cfg.maxViewsPerWorld, cfg.maxInstancesPerWorld,
           cfg.maxLightsPerWorld,
           br_width_, br_height_, cfg.voxelCfg)),
-      lights_(InternalConfig::maxLights),
       loaded_assets_(0),
       sky_(loadSky(dev, alloc, renderQueue)),
       material_textures_(0),
