@@ -709,7 +709,7 @@ static void makeBatchFrame(vk::Device& dev,
 #endif
 
         new (frame) BatchFrame{
-            { std::move(views), std::move(view_offsets), std::move(instances), std::move(instance_offsets), std::move(lights) },
+            { std::move(views), std::move(view_offsets), std::move(instances), std::move(instance_offsets), std::move(lights), std::move(light_offsets) },
             std::move(lights), std::move(lights_staging),
             std::move(sky_input), std::move(sky_input_staging),
             VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE,
@@ -931,7 +931,8 @@ static void makeBatchFrame(vk::Device& dev,
             std::move(view_offsets),
             std::move(instances),
             std::move(instance_offsets),
-            std::move(lights)
+            std::move(lights),
+            std::move(light_offsets)
         },
         std::move(lights),
         std::move(lights_staging),

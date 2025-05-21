@@ -888,14 +888,18 @@ static EngineInterop setupEngineInterop(Device &dev,
 
     uint32_t *iota_array_instances = nullptr;
     uint32_t *iota_array_views = nullptr;
+    uint32_t *iota_array_lights = nullptr;
     uint64_t *sorted_instance_world_ids = nullptr;
     uint64_t *sorted_view_world_ids = nullptr;
+    uint64_t *sorted_light_world_ids = nullptr;
 
     if (!gpu_input) {
         iota_array_instances = (uint32_t *)malloc(sizeof(uint32_t) * num_worlds * max_instances_per_world);
         iota_array_views = (uint32_t *)malloc(sizeof(uint32_t) * num_worlds * max_views_per_world);
+        iota_array_lights = (uint32_t *)malloc(sizeof(uint32_t) * num_worlds * max_lights_per_world);
         sorted_instance_world_ids = (uint64_t *)malloc(sizeof(uint64_t) * num_worlds * max_instances_per_world);
         sorted_view_world_ids = (uint64_t *)malloc(sizeof(uint64_t) * num_worlds * max_views_per_world);
+        sorted_light_world_ids = (uint64_t *)malloc(sizeof(uint64_t) * num_worlds * max_lights_per_world);
     }
 
     return EngineInterop {
@@ -903,8 +907,9 @@ static EngineInterop setupEngineInterop(Device &dev,
         std::move(view_offsets_cpu),
         std::move(instances_cpu),
         std::move(instance_offsets_cpu),
-        std::move(aabb_cpu),
         std::move(lights_cpu),
+        std::move(light_offsets_cpu),
+        std::move(aabb_cpu),
 #ifdef MADRONA_VK_CUDA_SUPPORT
         std::move(views_gpu),
         std::move(view_offsets_gpu),
@@ -912,24 +917,28 @@ static EngineInterop setupEngineInterop(Device &dev,
         std::move(instances_gpu),
         std::move(instance_offsets_gpu),
 
+        std::move(lights_gpu),
+        std::move(light_offsets_gpu),
+        
         std::move(views_cuda),
         std::move(view_offsets_cuda),
 
         std::move(instances_cuda),
         std::move(instance_offsets_cuda),
 
+        std::move(lights_cuda),
+        std::move(light_offsets_cuda),
+
         std::move(aabb_gpu),
         std::move(aabb_cuda),
-
-        std::move(lights_gpu),
-        std::move(lights_cuda),
 #endif
         views_hdl,
         view_offsets_hdl,
         instances_hdl,
         instance_offsets_hdl,
-        aabb_hdl,
         lights_hdl,
+        light_offsets_hdl,
+        aabb_hdl,
         bridge,
         gpu_bridge,
         max_views_per_world,
@@ -943,8 +952,10 @@ static EngineInterop setupEngineInterop(Device &dev,
         voxel_buffer_hdl,
         iota_array_instances,
         iota_array_views,
+        iota_array_lights,
         sorted_instance_world_ids,
-        sorted_view_world_ids
+        sorted_view_world_ids,
+        sorted_light_world_ids
     };
 }
 
