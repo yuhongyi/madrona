@@ -677,6 +677,9 @@ static void makeBatchFrame(vk::Device& dev,
     VkDeviceSize view_offset_size = (cfg.numWorlds) * sizeof(uint32_t);
     vk::LocalBuffer view_offsets = alloc.makeLocalBuffer(view_offset_size).value();
 
+    VkDeviceSize light_offsets_size = cfg.numWorlds * sizeof(uint32_t);
+    vk::LocalBuffer light_offsets = alloc.makeLocalBuffer(light_offsets_size).value();
+
     VkCommandPool prepare_cmdpool = vk::makeCmdPool(dev, dev.gfxQF);
     VkCommandPool render_cmdpool = vk::makeCmdPool(dev, dev.gfxQF);
     VkCommandBuffer prepare_cmdbuf = vk::makeCmdBuffer(dev, prepare_cmdpool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
@@ -709,7 +712,7 @@ static void makeBatchFrame(vk::Device& dev,
 #endif
 
         new (frame) BatchFrame{
-            { std::move(views), std::move(view_offsets), std::move(instances), std::move(instance_offsets), std::move(lights) },
+            { std::move(views), std::move(view_offsets), std::move(instances), std::move(instance_offsets), std::move(lights), std::move(light_offsets) },
             std::move(lights), std::move(lights_staging),
             std::move(sky_input), std::move(sky_input_staging),
             VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE,
@@ -931,7 +934,8 @@ static void makeBatchFrame(vk::Device& dev,
             std::move(view_offsets),
             std::move(instances),
             std::move(instance_offsets),
-            std::move(lights)
+            std::move(lights),
+            std::move(light_offsets)
         },
         std::move(lights),
         std::move(lights_staging),
@@ -1777,7 +1781,7 @@ void BatchRenderer::prepareForRendering(BatchRenderInfo info,
     }
 
     { // Import the lights
-        VkDeviceSize num_lights_bytes = info.numWorlds * info.maxLightsPerWorld *
+        VkDeviceSize num_lights_bytes = info.numLights *
             sizeof(shader::LightDesc);
 
         VkBufferCopy lights_data_copy = {
@@ -1831,17 +1835,6 @@ void BatchRenderer::prepareForRendering(BatchRenderInfo info,
     frame_data.latestOp = LatestOperation::RenderPrepare;
 
     didRender = true;
-}
-
-static void packLighting(const vk::Device &dev,
-                         vk::HostBuffer &light_staging_buffer,
-                         const HeapArray<render::shader::LightDesc> &lights)
-{
-    render::shader::LightDesc *staging = 
-        (render::shader::LightDesc *)light_staging_buffer.ptr;
-    memcpy(staging, lights.data(),
-           sizeof(render::shader::LightDesc) * InternalConfig::maxLights);
-    light_staging_buffer.flush(dev);
 }
 
 static void packSky( const vk::Device &dev,
