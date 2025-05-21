@@ -693,6 +693,11 @@ CountT Viewer::loadObjects(Span<const imp::SourceObject> objs,
             override_materials);
 }
 
+void Viewer::configureLighting(Span<const render::LightDesc> lights)
+{
+    impl_->renderer.configureLighting(lights);
+}
+
 void Viewer::loop(
     void (*world_input_fn)(void *, CountT, const UserInput &),
     void *world_input_data,

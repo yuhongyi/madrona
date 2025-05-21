@@ -18,6 +18,11 @@ CountT RenderManager::loadObjects(Span<const imp::SourceObject> objs,
     return rctx_->loadObjects(objs, mats, textures, override_materials);
 }
 
+void RenderManager::configureLighting(Span<const LightDesc> lights)
+{
+    rctx_->configureLighting(lights);
+}
+
 RenderManager::RenderManager(
         APIBackend *render_backend,
         GPUDevice *render_dev,

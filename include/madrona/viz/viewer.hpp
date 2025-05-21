@@ -54,6 +54,8 @@ public:
                        Span<const imp::SourceTexture> textures,
                        bool override_materials = false);
 
+    void configureLighting(Span<const render::LightDesc> lights);
+
     // Run the viewer
     template <typename WorldInputFn, typename AgentInputFn,
               typename StepFn, typename UIFn>

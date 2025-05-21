@@ -70,7 +70,7 @@ struct LightDesc {
     math::Vector3 direction;
 
     // Angle for the spotlight (default to pi/4).
-    float cutoff;
+    float cutoffAngle;
 
     // Intensity of the light. (1.f is default)
     float intensity;
@@ -105,7 +105,7 @@ struct LightDescShadow {
 };
 
 struct LightDescCutoffAngle {
-    float cutoff;
+    float cutoffAngle;
 };
 
 struct LightDescIntensity {

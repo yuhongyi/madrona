@@ -1542,6 +1542,7 @@ static void sortInstancesAndViewsCPU(EngineInterop *interop)
 
     InstanceData *instances = (InstanceData *)interop->instancesCPU->ptr;
     PerspectiveCameraData *views = (PerspectiveCameraData *)interop->viewsCPU->ptr;
+
     { // Write the sorted array of views and instances
         for (uint32_t i = 0; i < *interop->bridge.totalNumInstances; ++i) {
             instances[i] = interop->bridge.instances[interop->iotaArrayInstancesCPU[i]];
@@ -1835,6 +1836,17 @@ void BatchRenderer::prepareForRendering(BatchRenderInfo info,
     frame_data.latestOp = LatestOperation::RenderPrepare;
 
     didRender = true;
+}
+
+static void packLighting(const vk::Device &dev,
+                         vk::HostBuffer &light_staging_buffer,
+                         const HeapArray<render::shader::LightDesc> &lights)
+{
+    render::shader::LightDesc *staging = 
+        (render::shader::LightDesc *)light_staging_buffer.ptr;
+    memcpy(staging, lights.data(),
+           sizeof(render::shader::LightDesc) * InternalConfig::maxLights);
+    light_staging_buffer.flush(dev);
 }
 
 static void packSky( const vk::Device &dev,

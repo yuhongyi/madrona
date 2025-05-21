@@ -1331,6 +1331,7 @@ RenderContext::RenderContext(
           cfg.maxViewsPerWorld, cfg.maxInstancesPerWorld,
           cfg.maxLightsPerWorld,
           br_width_, br_height_, cfg.voxelCfg)),
+      lights_(InternalConfig::maxLights),
       loaded_assets_(0),
       sky_(loadSky(dev, alloc, renderQueue)),
       material_textures_(0),
@@ -2219,6 +2220,21 @@ CountT RenderContext::loadObjects(Span<const imp::SourceObject> src_objs,
     loaded_assets_.emplace_back(std::move(asset_data));
 
     return 0;
+}
+
+void RenderContext::configureLighting(Span<const LightDesc> lights)
+{
+    for (int i = 0; i < lights.size(); ++i) {
+        lights_.insert(i, LightDesc {
+            .position = {lights[i].position.x, lights[i].position.y, lights[i].position.z},
+            .direction = {lights[i].direction.x, lights[i].direction.y, lights[i].direction.z},
+            .cutoffAngle = lights[i].cutoffAngle,
+            .intensity = lights[i].intensity,
+            .type = lights[i].type,
+            .castShadow = lights[i].castShadow,
+            .active = lights[i].active
+        });
+    }
 }
 
 void RenderContext::waitForIdle()

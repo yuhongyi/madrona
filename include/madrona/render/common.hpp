@@ -7,7 +7,7 @@ namespace madrona::render {
 struct APILib {};
 struct APIBackend {};
 struct GPUDevice {};
-
+/*
 // Configures an individual light source
 struct LightConfig {
     bool isDirectional;
@@ -16,7 +16,7 @@ struct LightConfig {
     math::Vector3 dir;
     math::Vector3 color;
 };
-
+*/
 // If voxel generation is to happen
 struct VoxelConfig {
     uint32_t xLength;

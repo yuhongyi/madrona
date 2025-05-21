@@ -204,11 +204,11 @@ struct DirectionalLight {
 */
 
 struct LightDesc {
-    float4 position;
-    float4 direction;
-    float cutoff;
+    float3 position;
+    float3 direction;
+    float cutoffAngle;
     float intensity;
-    uint8_t type;
+    uint8_t isDirectional;
     uint8_t castShadow;
     uint8_t active;
 };

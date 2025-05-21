@@ -1925,7 +1925,7 @@ static void packSky( const Device &dev,
 
 static void packLighting(const Device &dev,
                          HostBuffer &light_staging_buffer,
-                         const HeapArray<DirectiLightDesconalLight> &lights)
+                         const HeapArray<render::LightDesc> &lights)
 {
     LightDesc *staging = (LightDesc *)light_staging_buffer.ptr;
     memcpy(staging, lights.data(),
@@ -2657,7 +2657,7 @@ bool ViewerRendererState::renderGridFrame(const viz::ViewerControl &viz_ctrl)
         VkBufferCopy light_copy {
             .srcOffset = 0,
             .dstOffset = frame.lightOffset,
-            .size = sizeof(LightDesc) * InternalConfig::maxLights
+            .size = sizeof(render::LightDesc) * InternalConfig::maxLights
         };
         dev.dt.cmdCopyBuffer(draw_cmd, frame.lightStaging.buffer,
                              frame.renderInput.buffer,
@@ -3694,6 +3694,11 @@ CountT ViewerRenderer::loadObjects(Span<const imp::SourceObject> objs,
                                    bool override_materials)
 {
     return state_.rctx.loadObjects(objs, mats, textures, override_materials);
+}
+
+void ViewerRenderer::configureLighting(Span<const render::LightDesc> lights)
+{
+    state_.rctx.configureLighting(lights);
 }
 
 bool ViewerRenderer::needResize() const

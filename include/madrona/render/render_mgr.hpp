@@ -52,6 +52,8 @@ public:
                        Span<const imp::SourceTexture> textures,
                        bool override_materials = false);
 
+    void configureLighting(Span<const LightDesc> lights);
+
     const RenderECSBridge * bridge() const;
     inline RenderContext & renderContext() const;
 

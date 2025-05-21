@@ -207,7 +207,7 @@ inline void lightUpdate(Context &ctx,
     desc.castShadow = shadow.castShadow;
     desc.position = pos;
     desc.direction = dir;
-    desc.cutoff = angle.cutoff;
+    desc.cutoffAngle = angle.cutoffAngle;
     desc.intensity = intensity.intensity;
     desc.active = active.active;
 #else
@@ -219,7 +219,7 @@ inline void lightUpdate(Context &ctx,
     desc.castShadow = shadow.castShadow;
     desc.position = pos;
     desc.direction = dir;
-    desc.cutoff = angle.cutoff;
+    desc.cutoffAngle = angle.cutoffAngle;
     desc.intensity = intensity.intensity;
     desc.active = active.active;
 #endif
@@ -491,6 +491,7 @@ void registerTypes(ECSRegistry &registry,
         state_mgr->setArchetypeWorldOffsets<RenderCameraArchetype>(
             bridge->viewOffsets);
         state_mgr->setArchetypeWorldOffsets<LightArchetype>(
+            bridge->lightOffsets);
 
         state_mgr->setArchetypeComponent<RenderableArchetype, InstanceData>(
             bridge->instances);
@@ -760,12 +761,12 @@ void makeEntityLightCarrier(Context &ctx, Entity e)
     ctx.get<LightCarrier>(e).light = light_e;
 
     ctx.get<LightDesc>(light_e) = LightDesc {
-        .type = ctx.get<LightDescType>(e).type,
-        .castShadow = ctx.get<LightDescShadow>(e).castShadow,
         .position = ctx.get<Position>(e),
         .direction = ctx.get<LightDescDirection>(e),
-        .cutoff = ctx.get<LightDescCutoffAngle>(e).cutoff,
+        .cutoffAngle = ctx.get<LightDescCutoffAngle>(e).cutoffAngle,
         .intensity = ctx.get<LightDescIntensity>(e).intensity,
+        .type = ctx.get<LightDescType>(e).type,
+        .castShadow = ctx.get<LightDescShadow>(e).castShadow,
         .active = ctx.get<LightDescActive>(e).active,
     };
 }
