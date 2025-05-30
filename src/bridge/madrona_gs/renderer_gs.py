@@ -15,14 +15,9 @@ class BatchRendererGS:
       rigid,
       gpu_id,
       num_worlds,
-      cameras,
+      num_cameras,
       num_lights,
-      lights_pos,
-      lights_dir,
-      lights_intensity,
-      lights_directional,
-      lights_castshadow,
-      lights_cutoff,
+      cam_fovs_tensor,
       batch_render_view_width=128,
       batch_render_view_height=128,
       add_cam_debug_geo=False,
@@ -38,15 +33,7 @@ class BatchRendererGS:
     default_geom_group = 2
     default_enabled_geom_groups=np.array([default_geom_group])
 
-    self.rigid = rigid
     self.num_worlds = num_worlds
-    self.cameras = cameras
-    self.lights_pos = lights_pos
-    self.lights_dir = lights_dir
-    self.lights_intensity = lights_intensity
-    self.lights_directional = lights_directional
-    self.lights_castshadow = lights_castshadow
-    self.lights_cutoff = lights_cutoff
 
     mesh_vertices = rigid.vverts_info.init_pos.to_numpy()
     mesh_faces = rigid.vfaces_info.vverts_idx.to_numpy()
@@ -63,14 +50,13 @@ class BatchRendererGS:
     geom_groups = np.full((n_vgeom,), default_geom_group, dtype=np.int32)
     geom_data_ids = np.arange(n_vgeom, dtype=np.int32)
     geom_sizes = np.ones((n_vgeom, 3), dtype=np.float32)
-    num_cams = len(cameras) if cameras is not None else 0
-    assert num_cams > 0, "Must have at least one camera for Madrona to work!"
+    assert num_cameras > 0, "Must have at least one camera for Madrona to work!"
     geom_rgba = rigid.vgeoms_info.color.to_numpy()
 
-    geom_mat_ids, mesh_texcoord_num, mesh_texcoord_offsets, mesh_texcoord_data, texture_widths, texture_heights, texture_nchans, texture_data, texture_offsets, material_texture_ids, material_rgba = self.get_texture_data()
+    geom_mat_ids, mesh_texcoord_num, mesh_texcoord_offsets, mesh_texcoord_data, texture_widths, texture_heights, texture_nchans, texture_data, texture_offsets, material_texture_ids, material_rgba = self.get_texture_data(rigid)
 
     # TODO: Support mutable camera fov
-    cam_fovy = np.array([cam.fov for cam in cameras], dtype=np.float32)
+    cam_fovy = cam_fovs_tensor.to_numpy()
 
     self.madrona = MadronaBatchRenderer(
         gpu_id=gpu_id,
@@ -96,7 +82,7 @@ class BatchRendererGS:
         tex_heights=texture_heights,
         tex_nchans=texture_nchans,
         num_lights=num_lights,
-        num_cams=num_cams,
+        num_cams=num_cameras,
         num_worlds=num_worlds,
 
         batch_render_view_width=batch_render_view_width,
@@ -108,11 +94,22 @@ class BatchRendererGS:
     )
     
 
-  def init(self):
-    cam_pos, cam_rot = self.get_camera_pos_rot_torch()
-    geom_pos, geom_rot = self.get_geom_pos_rot_torch()
-    geom_mat_ids, geom_rgb, geom_sizes = self.get_geom_properties_torch()
-    light_pos, light_dir, light_directional, light_castshadow, light_cutoff, light_intensity = self.get_lights_properties_torch()
+  def init(
+      self,
+      rigid,
+      cam_pos_tensor,
+      cam_rot_tensor,
+      lights_pos_tensor,
+      lights_dir_tensor,
+      lights_intensity_tensor,
+      lights_directional_tensor,
+      lights_castshadow_tensor,
+      lights_cutoff_tensor,
+  ):
+    geom_pos, geom_rot = self.get_geom_pos_rot_torch(rigid)
+    cam_pos, cam_rot = self.get_camera_pos_rot_torch(cam_pos_tensor, cam_rot_tensor)
+    geom_mat_ids, geom_rgb, geom_sizes = self.get_geom_properties_torch(rigid)
+    light_pos, light_dir, light_directional, light_castshadow, light_cutoff, light_intensity = self.get_lights_properties_torch(lights_pos_tensor, lights_dir_tensor, lights_intensity_tensor, lights_directional_tensor, lights_castshadow_tensor, lights_cutoff_tensor)
 
     # Make a copy to actually shuffle the memory layout before passing to C++
     self.madrona.init(
@@ -132,14 +129,18 @@ class BatchRendererGS:
     )
 
 
-  def render(self):
+  def render(
+      self,
+      rigid,
+      cam_pos_tensor,
+      cam_rot_tensor,
+  ):
     # Assume execution on GPU
     # TODO: Need to check if the device is GPU or CPU, or assert if not GPU
-    cam_pos, cam_rot = self.get_camera_pos_rot_torch()
-    geom_pos, geom_rot = self.get_geom_pos_rot_torch()
+    geom_pos, geom_rot = self.get_geom_pos_rot_torch(rigid)
+    cam_pos, cam_rot = self.get_camera_pos_rot_torch(cam_pos_tensor, cam_rot_tensor)
 
-    #self.madrona.render_dummy()
-    self.madrona.render_torch(
+    self.madrona.render(
         geom_pos,
         geom_rot,
         cam_pos,
@@ -148,20 +149,10 @@ class BatchRendererGS:
     rgb_torch = self.madrona.rgb_tensor().to_torch()
     depth_torch = self.madrona.depth_tensor().to_torch()    
     return rgb_torch, depth_torch
-  
-  def destroy(self):
-    self.rigid = None
-    self.cameras = None
-    self.lights_pos = None
-    self.lights_dir = None
-    self.lights_intensity = None
-    self.lights_directional = None
-    self.lights_castshadow = None
-    self.lights_cutoff = None
 
-  def get_texture_data(self):
-    n_vgeom = self.rigid.n_vgeoms
-    vgeoms = self.rigid.vgeoms
+  def get_texture_data(self, rigid):
+    n_vgeom = rigid.n_vgeoms
+    vgeoms = rigid.vgeoms
 
     # get number of textures, total texcoord and texture data size
     num_textures = 0
@@ -225,48 +216,37 @@ class BatchRendererGS:
     return geom_mat_ids, mesh_texcoord_num, mesh_texcoord_offsets, texcoord_data, texture_widths, texture_heights, texture_nchans, texture_data, texture_offsets, material_texture_ids, material_rgba
 
 ########################## Utils ##########################  
-  def get_camera_pos_rot_torch(self):
-    # TODO: Consider making cam.pos and cam.quat_for_madrona as torch tensors,
-    # but it would be tricky to concatenate them into camera_pos and camera_rot
-    # might need a ti.kernel to do this, but not sure how fast that will be,
-    # since ti.kernel functions are blocking
-    cam_pos = ti.ndarray(dtype=ti.f32, shape=(len(self.cameras), 3))
-    cam_rot = ti.ndarray(dtype=ti.f32, shape=(len(self.cameras), 4))
-    for i, cam in enumerate(self.cameras):
-        cam_pos[i] = np.array(cam.pos)
-        cam_rot[i] = np.array(cam.quat_for_madrona)
-
-    cam_pos = torch.tensor(cam_pos).to("cuda")
-    cam_rot = torch.tensor(cam_rot).to("cuda")
+  def get_camera_pos_rot_torch(self, cam_pos_tensor, cam_rot_tensor):
+    cam_pos = cam_pos_tensor.to_torch().unsqueeze(0).repeat(self.num_worlds, 1, 1)
+    cam_rot = cam_rot_tensor.to_torch().unsqueeze(0).repeat(self.num_worlds, 1, 1)
     return cam_pos, cam_rot
   
-  def get_geom_pos_rot_torch(self):
-    geom_pos = self.rigid.vgeoms_state.pos.to_torch()
-    geom_rot = self.rigid.vgeoms_state.quat.to_torch()
-    geom_pos = geom_pos.transpose(0, 1).contiguous().to("cuda")
-    geom_rot = geom_rot.transpose(0, 1).contiguous().to("cuda")
+  def get_geom_pos_rot_torch(self, rigid):
+    geom_pos = rigid.vgeoms_state.pos.to_torch()
+    geom_rot = rigid.vgeoms_state.quat.to_torch()
+    geom_pos = geom_pos.transpose(0, 1).contiguous()
+    geom_rot = geom_rot.transpose(0, 1).contiguous()
     return geom_pos, geom_rot
   
-  def get_geom_properties_torch(self):
-    geom_mat_ids = ti.zeros((self.rigid.n_vgeoms,), dtype=ti.i32) - 1
-    geom_sizes = ti.ones((self.rigid.n_vgeoms, 3), dtype=ti.f32)
+  def get_geom_properties_torch(self, rigid):
+    geom_rgb_torch = rigid.vgeoms_info.color.to_torch()
+    geom_rgb_int = (geom_rgb_torch * 255).to(torch.int32)  # Cast to int32
+    geom_rgb_uint = (geom_rgb_int[:, 0] << 16) | (geom_rgb_int[:, 1] << 8) | geom_rgb_int[:, 2]
+    geom_rgb = geom_rgb_uint.unsqueeze(0).repeat(self.num_worlds, 1)
 
-    geom_rgb_ti = ti.ndarray(dtype=ti.u32, shape=(self.rigid.n_vgeoms,))
-    for i in range(self.rigid.n_vgeoms):
-      rgba_uint = ti.cast(self.rigid.vgeoms_info.color[i] * 255, ti.u32)
-      geom_rgb_ti[i] = rgba_uint[0] * (1 << 16) + rgba_uint[1] * (1 << 8) + rgba_uint[2]
-    geom_rgb = geom_rgb_ti.to_torch()
+    geom_mat_ids = torch.full((rigid.n_vgeoms,), -1, dtype=torch.int32)
+    geom_mat_ids = geom_mat_ids.unsqueeze(0).repeat(self.num_worlds, 1)
 
-    geom_mat_ids = geom_mat_ids.repeat(self.num_worlds)
-    geom_rgb = geom_rgb.repeat(self.num_worlds)
-    geom_sizes = geom_sizes.repeat(self.num_worlds, 1)
+    geom_sizes = torch.ones((rigid.n_vgeoms, 3), dtype=torch.float32)
+    geom_sizes = geom_sizes.unsqueeze(0).repeat(self.num_worlds, 1, 1)
+    
     return geom_mat_ids, geom_rgb, geom_sizes
   
-  def get_lights_properties_torch(self):
-    light_pos = self.lights_pos.to_torch().reshape(-1, 3).repeat(self.num_worlds, 1)
-    light_dir = self.lights_dir.to_torch().reshape(-1, 3).repeat(self.num_worlds, 1)
-    light_directional = self.lights_directional.to_torch().reshape(-1).repeat(self.num_worlds)
-    light_castshadow = self.lights_castshadow.to_torch().reshape(-1).repeat(self.num_worlds)
-    light_cutoff = self.lights_cutoff.to_torch().reshape(-1).repeat(self.num_worlds)
-    light_intensity = self.lights_intensity.to_torch().reshape(-1).repeat(self.num_worlds)
+  def get_lights_properties_torch(self, lights_pos_tensor, lights_dir_tensor, lights_intensity_tensor, lights_directional_tensor, lights_castshadow_tensor, lights_cutoff_tensor):
+    light_pos = lights_pos_tensor.to_torch().reshape(-1, 3).unsqueeze(0).repeat(self.num_worlds, 1, 1)
+    light_dir = lights_dir_tensor.to_torch().reshape(-1, 3).unsqueeze(0).repeat(self.num_worlds, 1, 1)
+    light_directional = lights_directional_tensor.to_torch().reshape(-1).unsqueeze(0).repeat(self.num_worlds, 1)
+    light_castshadow = lights_castshadow_tensor.to_torch().reshape(-1).unsqueeze(0).repeat(self.num_worlds, 1)
+    light_cutoff = lights_cutoff_tensor.to_torch().reshape(-1).unsqueeze(0).repeat(self.num_worlds, 1)
+    light_intensity = lights_intensity_tensor.to_torch().reshape(-1).unsqueeze(0).repeat(self.num_worlds, 1)
     return light_pos, light_dir, light_directional, light_castshadow, light_cutoff, light_intensity
