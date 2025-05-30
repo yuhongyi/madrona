@@ -70,7 +70,7 @@ class BatchRendererGS:
     geom_mat_ids, mesh_texcoord_num, mesh_texcoord_offsets, mesh_texcoord_data, texture_widths, texture_heights, texture_nchans, texture_data, texture_offsets, material_texture_ids, material_rgba = self.get_texture_data()
 
     # TODO: Support mutable camera fov
-    cam_fovy = np.array([cam.fov for cam in cameras], dtype=np.float32)#
+    cam_fovy = np.array([cam.fov for cam in cameras], dtype=np.float32)
 
     self.madrona = MadronaBatchRenderer(
         gpu_id=gpu_id,
@@ -226,11 +226,15 @@ class BatchRendererGS:
 
 ########################## Utils ##########################  
   def get_camera_pos_rot_torch(self):
-    cam_pos = ti.ndarray(dtype=ti.f32, shape=(self.num_worlds, 3))
-    cam_rot = ti.ndarray(dtype=ti.f32, shape=(self.num_worlds, 4))
-    for i in range(self.num_worlds):
-      cam_pos[i] = self.cameras[i].pos_for_madrona
-      cam_rot[i] = self.cameras[i].quat_for_madrona
+    # TODO: Consider making cam.pos and cam.quat_for_madrona as torch tensors,
+    # but it would be tricky to concatenate them into camera_pos and camera_rot
+    # might need a ti.kernel to do this, but not sure how fast that will be,
+    # since ti.kernel functions are blocking
+    cam_pos = ti.ndarray(dtype=ti.f32, shape=(len(self.cameras), 3))
+    cam_rot = ti.ndarray(dtype=ti.f32, shape=(len(self.cameras), 4))
+    for i, cam in enumerate(self.cameras):
+        cam_pos[i] = np.array(cam.pos)
+        cam_rot[i] = np.array(cam.quat_for_madrona)
 
     cam_pos = torch.tensor(cam_pos).to("cuda")
     cam_rot = torch.tensor(cam_rot).to("cuda")
