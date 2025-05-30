@@ -696,8 +696,7 @@ static RTAssets loadRenderObjects(
     SourceTexture *out_textures = tmp_alloc.allocN<SourceTexture>(model.numTextures);
 
     for (CountT i = 0; i < model.numTextures; i++) {
-        // Calculate the correct texture offset since we added a 4th channel
-        uint32_t tex_offset = model.texOffsets[i] + (model.texOffsets[i] / 3);
+        uint32_t tex_offset = model.texOffsets[i];
         Optional<SourceTexture> tex = SourceTexture {
             .data = &model.texData[tex_offset],
             .format = SourceTextureFormat::R8G8B8A8,

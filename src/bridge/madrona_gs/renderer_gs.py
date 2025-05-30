@@ -4,6 +4,7 @@ import torch
 from madrona_gs._madrona_gs_batch_renderer import MadronaBatchRenderer
 from madrona_gs._madrona_gs_batch_renderer.madrona import ExecMode
 from trimesh.visual.texture import TextureVisuals
+from PIL import Image
 
 class BatchRendererGS:
   """Wraps Genesis Model around MadronaBatchRenderer."""
@@ -208,10 +209,10 @@ class BatchRendererGS:
       if(isinstance(visual, TextureVisuals)):
         # Copy texcoord data
         uv_size = visual.uv.shape
-        mesh_texcoord_num[num_textures] = uv_size[0]
-        mesh_texcoord_offsets[num_textures] = total_texcoord_data_size
-        total_texcoord_data_size += uv_size[0] * 2
-        texcoord_data[mesh_texcoord_offsets[num_textures] : mesh_texcoord_offsets[num_textures] + mesh_texcoord_num[num_textures] * 2] = visual.uv.astype(np.float32)
+        mesh_texcoord_num[geomIdx] = uv_size[0]
+        mesh_texcoord_offsets[geomIdx] = total_texcoord_data_size
+        total_texcoord_data_size += mesh_texcoord_num[geomIdx]
+        texcoord_data[mesh_texcoord_offsets[geomIdx] : mesh_texcoord_offsets[geomIdx] + mesh_texcoord_num[geomIdx]] = visual.uv.astype(np.float32)
 
         # Copy texture data
         texture_widths[num_textures] = visual.material.image.width
@@ -220,7 +221,7 @@ class BatchRendererGS:
         texture_data_size = texture_widths[num_textures] * texture_heights[num_textures] * texture_nchans[num_textures]
         texture_offsets[num_textures] = total_texture_data_size
         total_texture_data_size += texture_data_size
-        texture_data[texture_offsets[num_textures] : texture_offsets[num_textures] + texture_data_size] = np.array(list(visual.material.image.getdata()), dtype=np.uint8).flatten()
+        texture_data[texture_offsets[num_textures] : texture_offsets[num_textures] + texture_data_size] = np.array(list(visual.material.image.transpose(method=Image.Transpose.FLIP_TOP_BOTTOM).getdata()), dtype=np.uint8).flatten()
 
         # Set material id
         geom_mat_ids[geomIdx] = num_textures
