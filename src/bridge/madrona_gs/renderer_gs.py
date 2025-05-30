@@ -1,5 +1,6 @@
 import numpy as np
 import torch
+import taichi as ti
 
 from madrona_gs._madrona_gs_batch_renderer import MadronaBatchRenderer
 from madrona_gs._madrona_gs_batch_renderer.madrona import ExecMode
@@ -98,22 +99,8 @@ class BatchRendererGS:
     
 
   def init(self):
-    #print("init")
-    #print("cam_pos", cam_pos)
-    #print("cam_rot", cam_rot) 
-    #print("geom_pos", geom_pos)
-    #print("geom_rot", geom_rot)
-    #print("geom_mat_ids", geom_mat_ids)
-    #print("geom_rgba", geom_rgba)
-    #print("geom_sizes", geom_sizes)
-    #print("light_pos", light_pos, light_pos.shape)
-    #print("light_dir", light_dir, light_dir.shape)
-    #print("light_directional", light_directional, light_directional.shape)
-    #print("light_castshadow", light_castshadow, light_castshadow.shape)
-    #print("light_cutoff", light_cutoff, light_cutoff.shape)
-
-    cam_pos, cam_rot = self.get_camera_pos_rot_numpy()
-    geom_pos, geom_rot = self.get_geom_pos_rot_numpy()
+    cam_pos, cam_rot = self.get_camera_pos_rot_torch()
+    geom_pos, geom_rot = self.get_geom_pos_rot_torch()
 
     geom_mat_ids = np.full((self.rigid.n_vgeoms,), -1, dtype=np.int32)
     geom_rgba = self.rigid.vgeoms_info.color.to_numpy()
@@ -125,10 +112,10 @@ class BatchRendererGS:
 
     # Make a copy to actually shuffle the memory layout before passing to C++
     self.madrona.init(
-      geom_pos.copy(),
-      geom_rot.copy(),
-      cam_pos.copy(),
-      cam_rot.copy(),
+      geom_pos,
+      geom_rot,
+      cam_pos,
+      cam_rot,
       np.repeat(geom_mat_ids[np.newaxis], self.num_worlds, axis=0),
       np.repeat(geom_rgb[np.newaxis], self.num_worlds, axis=0),
       np.repeat(geom_sizes[np.newaxis], self.num_worlds, axis=0),
@@ -142,15 +129,10 @@ class BatchRendererGS:
 
 
   def render(self):
-    #print("here is rendering")      
     # Assume execution on GPU
     # TODO: Need to check if the device is GPU or CPU, or assert if not GPU
     cam_pos, cam_rot = self.get_camera_pos_rot_torch()
     geom_pos, geom_rot = self.get_geom_pos_rot_torch()
-    #print("geom_pos", geom_pos.shape, geom_pos.dtype, geom_pos.device)
-    #print("geom_rot", geom_rot.shape, geom_rot.dtype, geom_rot.device)
-    #print("cam_pos", cam_pos.shape, cam_pos.dtype, cam_pos.device)
-    #print("cam_rot", cam_rot.shape, cam_rot.dtype, cam_rot.device)
 
     #self.madrona.render_dummy()
     self.madrona.render_torch(
@@ -233,26 +215,17 @@ class BatchRendererGS:
 
     return geom_mat_ids, mesh_texcoord_num, mesh_texcoord_offsets, texcoord_data, texture_widths, texture_heights, texture_nchans, texture_data, texture_offsets, material_texture_ids, material_rgba
 
-########################## Utils ##########################
-  def get_camera_pos_rot_numpy(self):
-    cam_pos = np.array([c.pos for c in self.cameras], dtype=np.float32)
-    cam_rot = np.array([c.quat_for_madrona for c in self.cameras], dtype=np.float32)
-    cam_pos = np.repeat(cam_pos[None], self.num_worlds, axis=0)
-    cam_rot = np.repeat(cam_rot[None], self.num_worlds, axis=0)
-    return cam_pos, cam_rot
-  
+########################## Utils ##########################  
   def get_camera_pos_rot_torch(self):
-    cam_pos, cam_rot = self.get_camera_pos_rot_numpy()
+    cam_pos = ti.ndarray(dtype=ti.f32, shape=(self.num_worlds, 3))
+    cam_rot = ti.ndarray(dtype=ti.f32, shape=(self.num_worlds, 4))
+    for i in range(self.num_worlds):
+      cam_pos[i] = self.cameras[i].pos_for_madrona
+      cam_rot[i] = self.cameras[i].quat_for_madrona
+
     cam_pos = torch.tensor(cam_pos).to("cuda")
     cam_rot = torch.tensor(cam_rot).to("cuda")
     return cam_pos, cam_rot
-  
-  def get_geom_pos_rot_numpy(self):
-    geom_pos = self.rigid.vgeoms_state.pos.to_numpy()
-    geom_rot = self.rigid.vgeoms_state.quat.to_numpy()
-    geom_pos = np.swapaxes(geom_pos, 0, 1)
-    geom_rot = np.swapaxes(geom_rot, 0, 1)
-    return geom_pos, geom_rot
   
   def get_geom_pos_rot_torch(self):
     geom_pos = self.rigid.vgeoms_state.pos.to_torch()

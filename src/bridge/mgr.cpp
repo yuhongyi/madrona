@@ -439,7 +439,7 @@ struct Manager::Impl {
 
         gpuExec.run(init_graph);
 
-        copyInTransformsCPU(geom_positions, geom_rotations,
+        copyInTransforms(geom_positions, geom_rotations,
                          cam_positions, cam_rotations, 0);
         copyInPropertiesCPU(geom_sizes, mat_ids, geom_rgb, light_pos, light_dir,
             light_isdir, light_castshadow, light_cutoff, light_intensity, 0);
@@ -448,20 +448,7 @@ struct Manager::Impl {
         renderImpl();
     }
 
-    inline void render(Vector3 *geom_positions,
-                               Quat *geom_rotations,
-                               Vector3 *cam_positions,
-                               Quat *cam_rotations)
-    {
-        copyInTransformsCPU(geom_positions, geom_rotations,
-                         cam_positions, cam_rotations, 0);
-
-        gpuExec.run(renderGraph);
-
-        renderImpl();
-    }
-
-    inline void render_torch(const Vector3 *geom_pos,
+    inline void render(const Vector3 *geom_pos,
                              const Quat *geom_rot,
                              const Vector3 *cam_pos,
                              const Quat *cam_rot)
@@ -472,17 +459,6 @@ struct Manager::Impl {
             (Vector3 *)cam_pos,
             (Quat *)cam_rot, 0);
 
-        gpuExec.runAsync(renderGraph, 0);
-        // Currently a CPU sync is needed to read back the total number of
-        // instances for Vulkan
-        // TODO: Can we remove this? where is the total number read after this?
-        REQ_CUDA(cudaStreamSynchronize(0));
-
-        renderImpl();
-    }
-
-    inline void render_dummy()
-    {
         gpuExec.runAsync(renderGraph, 0);
         // Currently a CPU sync is needed to read back the total number of
         // instances for Vulkan
@@ -981,21 +957,10 @@ void Manager::init(math::Vector3 *geom_pos, math::Quat *geom_rot,
         light_cutoff, light_intensity);
 }
 
-void Manager::render(math::Vector3 *geom_pos, math::Quat *geom_rot,
-                     math::Vector3 *cam_pos, math::Quat *cam_rot)
-{
-    impl_->render(geom_pos, geom_rot, cam_pos, cam_rot);
-}
-
-void Manager::render_torch(const math::Vector3 *geom_pos, const math::Quat *geom_rot,
+void Manager::render(const math::Vector3 *geom_pos, const math::Quat *geom_rot,
                      const math::Vector3 *cam_pos, const math::Quat *cam_rot)
 {
-    impl_->render_torch(geom_pos, geom_rot, cam_pos, cam_rot);
-}
-
-void Manager::render_dummy()
-{
-    impl_->render_dummy();
+    impl_->render(geom_pos, geom_rot, cam_pos, cam_rot);
 }
 
 #ifdef MADRONA_CUDA_SUPPORT

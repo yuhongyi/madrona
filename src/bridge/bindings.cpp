@@ -172,10 +172,10 @@ NB_MODULE(_madrona_gs_batch_renderer, m) {
            nb::arg("visualizer_gpu_handles") = nb::none(),
            nb::keep_alive<1, 31>())
         .def("init", [](Manager &mgr,
-                        nb::ndarray<const float, nb::shape<-1, -1, 3>> geom_pos,
-                        nb::ndarray<const float, nb::shape<-1, -1, 4>> geom_rot,
-                        nb::ndarray<const float, nb::shape<-1, -1, 3>> cam_pos,
-                        nb::ndarray<const float, nb::shape<-1, -1, 4>> cam_rot,
+                        nb::ndarray<nb::pytorch, const float, nb::shape<-1, -1, 3>> geom_pos,
+                        nb::ndarray<nb::pytorch, const float, nb::shape<-1, -1, 4>> geom_rot,
+                        nb::ndarray<nb::pytorch, const float, nb::shape<-1, -1, 3>> cam_pos,
+                        nb::ndarray<nb::pytorch, const float, nb::shape<-1, -1, 4>> cam_rot,
                         nb::ndarray<const int32_t, nb::shape<-1, -1>> mat_ids,
                         nb::ndarray<const uint32_t, nb::shape<-1, -1>> geom_rgb,
                         nb::ndarray<const float, nb::shape<-1, -1, 3>> geom_sizes,
@@ -187,10 +187,11 @@ NB_MODULE(_madrona_gs_batch_renderer, m) {
                         nb::ndarray<const float, nb::shape<-1, -1>> light_intensity)
 
         {
-            mgr.init((math::Vector3 *)geom_pos.data(),
-                     (math::Quat *)geom_rot.data(),
-                     (math::Vector3 *)cam_pos.data(),
-                     (math::Quat *)cam_rot.data(),
+            mgr.init(
+                     reinterpret_cast<const math::Vector3 *>(geom_pos.data()),
+                     reinterpret_cast<const math::Quat *>(geom_rot.data()),
+                     reinterpret_cast<const math::Vector3 *>(cam_pos.data()),
+                     reinterpret_cast<const math::Quat *>(cam_rot.data()),
                      (int32_t *)mat_ids.data(),
                      (uint32_t *)geom_rgb.data(),
                      (math::Diag3x3 *)geom_sizes.data(),
@@ -202,33 +203,17 @@ NB_MODULE(_madrona_gs_batch_renderer, m) {
                      (float *)light_intensity.data());
         })
         .def("render", [](Manager &mgr,
-                          nb::ndarray<const float, nb::shape<-1, -1, 3>> geom_pos,
-                          nb::ndarray<const float, nb::shape<-1, -1, 4>> geom_rot,
-                          nb::ndarray<const float, nb::shape<-1, -1, 3>> cam_pos,
-                          nb::ndarray<const float, nb::shape<-1, -1, 4>> cam_rot)
-
-        {
-            mgr.render((math::Vector3 *)geom_pos.data(),
-                       (math::Quat *)geom_rot.data(),
-                       (math::Vector3 *)cam_pos.data(),
-                       (math::Quat *)cam_rot.data());
-        })
-        .def("render_torch", [](Manager &mgr,
             nb::ndarray<nb::pytorch, const float, nb::shape<-1, -1, 3>> geom_pos,
             nb::ndarray<nb::pytorch, const float, nb::shape<-1, -1, 4>> geom_rot,
             nb::ndarray<nb::pytorch, const float, nb::shape<-1, -1, 3>> cam_pos,
             nb::ndarray<nb::pytorch, const float, nb::shape<-1, -1, 4>> cam_rot)
         {
-            mgr.render_torch(
+            mgr.render(
                 reinterpret_cast<const math::Vector3 *>(geom_pos.data()),
                 reinterpret_cast<const math::Quat *>(geom_rot.data()),
                 reinterpret_cast<const math::Vector3 *>(cam_pos.data()),
                 reinterpret_cast<const math::Quat *>(cam_rot.data())
             );
-        })
-        .def("render_dummy", [](Manager &mgr)
-        {
-            mgr.render_dummy();
         })
         .def("instance_positions_tensor", &Manager::instancePositionsTensor)
         .def("instance_rotations_tensor", &Manager::instanceRotationsTensor)

@@ -95,17 +95,11 @@ public:
                          float *light_cutoff,
                          float *light_intensity);
     
-    MGR_EXPORT void render(madrona::math::Vector3 *geom_pos,
-                           madrona::math::Quat *geom_rot,
-                           madrona::math::Vector3 *cam_pos,
-                           madrona::math::Quat *cam_rot);
 
-    MGR_EXPORT void render_torch(const madrona::math::Vector3 *geom_pos,
-                                 const madrona::math::Quat *geom_rot,
-                                 const madrona::math::Vector3 *cam_pos,
-                                 const madrona::math::Quat *cam_rot);
-
-    MGR_EXPORT void render_dummy();
+    MGR_EXPORT void render(const madrona::math::Vector3 *geom_pos,
+                           const madrona::math::Quat *geom_rot,
+                           const madrona::math::Vector3 *cam_pos,
+                           const madrona::math::Quat *cam_rot);
      
 #ifdef MADRONA_CUDA_SUPPORT
     MGR_EXPORT void gpuStreamInit(cudaStream_t strm, void **buffers);
