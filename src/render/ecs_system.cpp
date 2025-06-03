@@ -731,8 +731,7 @@ void attachEntityToView(Context &ctx,
         x_scale, y_scale, 
         z_near, 
         z_far,
-        ctx.worldID().idx,
-        0 // Padding
+        ctx.worldID().idx
     };
 
     if (raycast_enabled) {

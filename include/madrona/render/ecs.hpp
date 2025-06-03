@@ -41,7 +41,6 @@ struct alignas(16) PerspectiveCameraData {
     float zNear;
     float zFar;
     int32_t worldIDX;
-    uint32_t padding;
 };
 
 // For private usage - not to be used by user.
