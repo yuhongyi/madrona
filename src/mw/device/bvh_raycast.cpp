@@ -1023,14 +1023,14 @@ extern "C" __global__ void bvhRaycastEntry()
                 writeDepth(global_pixel_byte_off, result.depth);
             } else {
                 writeRGB(global_pixel_byte_off, { 0.f, 0.f, 0.f });
-                writeDepth(global_pixel_byte_off, 0.f);
+                writeDepth(global_pixel_byte_off, INFINITY);
             }
         } else {
             // Only write depth information
             if (result.hit) {
                 writeDepth(global_pixel_byte_off, result.depth);
             } else {
-                writeDepth(global_pixel_byte_off, 0.f);
+                writeDepth(global_pixel_byte_off, INFINITY);
             }
         }
 
