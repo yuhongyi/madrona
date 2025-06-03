@@ -790,7 +790,7 @@ static __device__ TraceResult traceRay(
                     cudaTextureObject_t *tex = &bvhParams.textures[mat->textureIdx];
 
                     float4 sampled_color = tex2D<float4>(*tex,
-                            tri_hit.uv.x, 1.f - tri_hit.uv.y);
+                            tri_hit.uv.x, tri_hit.uv.y);
 
                     Vector3 tex_color = { sampled_color.x,
                         sampled_color.y,
