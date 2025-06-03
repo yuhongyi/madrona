@@ -29,7 +29,7 @@ def main():
             # constraint_solver=gs.constraint_solver.Newton,
         ),
         renderer = gs.options.renderers.BatchRenderer(
-            use_rasterizer=False,
+            use_rasterizer=True,
             batch_render_res=(512, 512),
         )
     )
@@ -111,7 +111,6 @@ def output_rgb(output_dir, rgb, i_env, i_cam, i_step):
 
 def output_depth(output_dir, depth, i_env, i_cam, i_step):
     depth = depth.cpu().numpy()[i_env, i_cam]
-    depth = np.asarray(depth)
     depth = np.clip(depth, 0, 100)
     depth_normalized = cv2.normalize(depth, None, 0, 255, cv2.NORM_MINMAX)
     depth_uint8 = depth_normalized.astype(np.uint8)
@@ -132,7 +131,6 @@ def output_rgb_single_cam(output_dir, rgb, i_env, i_step, cam_idx):
 
 def output_depth_single_cam(output_dir, depth, i_env, i_step, cam_idx):
     depth = depth.cpu().numpy()[i_env]
-    depth = np.asarray(depth)
     depth = np.clip(depth, 0, 100)
     depth_normalized = cv2.normalize(depth, None, 0, 255, cv2.NORM_MINMAX)
     depth_uint8 = depth_normalized.astype(np.uint8)
