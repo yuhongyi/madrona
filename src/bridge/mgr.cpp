@@ -64,10 +64,6 @@ static inline Optional<render::RenderManager> initRenderManager(
     const Optional<VisualizerGPUHandles> &viz_gpu_hdls,
     const Optional<RenderGPUState> &render_gpu_state)
 {
-    if (mgr_cfg.useRT && !viz_gpu_hdls.has_value()) {
-        return Optional<render::RenderManager>::none();
-    }
-
     render::APIBackend *render_api;
     render::GPUDevice *render_dev;
 
@@ -391,6 +387,10 @@ static RTAssets loadRenderObjects(
     meshes[(size_t)RenderPrimObjectIDs::Box] = CreateBox(generated_assets);
     meshes[(size_t)RenderPrimObjectIDs::Cylinder] = CreateCylinder(generated_assets);
     meshes[(size_t)RenderPrimObjectIDs::Capsule] = CreateCapsule(generated_assets);
+
+    // Allocate memory for normals and tangentAndSigns
+    HeapArray<Vector3> normals(model.meshGeo.numVertices);
+    HeapArray<Vector4> tangentAndSigns(model.meshGeo.numVertices);
     
     for (CountT mesh_idx = 0; mesh_idx < num_meshes; mesh_idx++) {
         uint32_t mesh_vert_offset = model.meshGeo.vertexOffsets[mesh_idx];
@@ -414,8 +414,8 @@ static RTAssets loadRenderObjects(
 
         meshes[mesh_idx + (size_t)RenderPrimObjectIDs::NumPrims] = {
             .positions = model.meshGeo.vertices + mesh_vert_offset,
-            .normals = nullptr,
-            .tangentAndSigns = nullptr,
+            .normals = normals.data() + mesh_vert_offset,
+            .tangentAndSigns = tangentAndSigns.data() + mesh_vert_offset,
             .uvs = uvs,
             .indices = model.meshGeo.indices + mesh_idx_offset,
             .faceCounts = nullptr,
@@ -719,18 +719,6 @@ void Manager::render(const math::Vector3 *geom_pos, const math::Quat *geom_rot,
 {
     impl_->render(geom_pos, geom_rot, cam_pos, cam_rot);
 }
-
-#ifdef MADRONA_CUDA_SUPPORT
-void Manager::gpuStreamInit(cudaStream_t strm, void **buffers)
-{
-    impl_->gpuStreamInit(strm, buffers);
-}
-
-void Manager::gpuStreamRender(cudaStream_t strm, void **buffers)
-{
-    impl_->gpuStreamRender(strm, buffers);
-}
-#endif
 
 Tensor Manager::instancePositionsTensor() const
 {

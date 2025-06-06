@@ -1998,21 +1998,21 @@ CountT RenderContext::loadObjects(Span<const imp::SourceObject> src_objs,
                 // printf("%u ", vert_mat_index);
 
                 Vector3 pos = mesh.positions[i];
-                Vector3 normal = mesh.normals ?
-                    mesh.normals[i] : (*new_normals)[i];
-                Vector4 tangent_sign;
-                // FIXME: use mikktspace at import time
-                if (mesh.tangentAndSigns != nullptr) {
-                    tangent_sign = mesh.tangentAndSigns[i];
-                } else {
-                    Vector3 a, b;
-                    normal.frame(&a, &b);
-                    tangent_sign = {
-                        a.x,
-                        a.y,
-                        a.z,
-                        1.f,
-                    };
+                Vector3 normal = (*new_normals)[i];;
+                if(mesh.normals) {
+                    mesh.normals[i] = normal;
+                }
+
+                Vector3 a, b;
+                normal.frame(&a, &b);
+                Vector4 tangent_sign = {
+                    a.x,
+                    a.y,
+                    a.z,
+                    1.f,
+                };
+                if(mesh.tangentAndSigns) {
+                    mesh.tangentAndSigns[i] = tangent_sign;
                 }
 
                 Vector2 uv = mesh.uvs ? mesh.uvs[i] : Vector2 { 0, 0 };

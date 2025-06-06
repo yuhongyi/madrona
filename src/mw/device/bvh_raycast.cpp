@@ -297,6 +297,8 @@ struct TriHitInfo {
 struct TriangleFetch {
     Vector3 a, b, c;
     Vector2 uva, uvb, uvc;
+    Vector3 normalA, normalB, normalC;
+    Vector4 tangentAndSignA, tangentAndSignB, tangentAndSignC;
 };
 
 static TriangleFetch fetchLeafTriangle(int32_t leaf_idx,
@@ -310,6 +312,12 @@ static TriangleFetch fetchLeafTriangle(int32_t leaf_idx,
         .uva = mesh_bvh->vertices[(leaf_idx + offset)*3 + 0].uv,
         .uvb = mesh_bvh->vertices[(leaf_idx + offset)*3 + 1].uv,
         .uvc = mesh_bvh->vertices[(leaf_idx + offset)*3 + 2].uv,
+        .normalA = mesh_bvh->vertices[(leaf_idx + offset)*3 + 0].normal,
+        .normalB = mesh_bvh->vertices[(leaf_idx + offset)*3 + 1].normal,
+        .normalC = mesh_bvh->vertices[(leaf_idx + offset)*3 + 2].normal,
+        .tangentAndSignA = mesh_bvh->vertices[(leaf_idx + offset)*3 + 0].tangentAndSign,
+        .tangentAndSignB = mesh_bvh->vertices[(leaf_idx + offset)*3 + 1].tangentAndSign,
+        .tangentAndSignC = mesh_bvh->vertices[(leaf_idx + offset)*3 + 2].tangentAndSign,
     };
 
     return fetched;
@@ -317,6 +325,7 @@ static TriangleFetch fetchLeafTriangle(int32_t leaf_idx,
 
 static bool rayTriangleIntersection(
     Vector3 tri_a, Vector3 tri_b, Vector3 tri_c,
+    Vector3 normalA, Vector3 normalB, Vector3 normalC,
     int32_t kx, int32_t ky, int32_t kz,
     float Sx, float Sy, float Sz,
     Vector3 org,
@@ -443,7 +452,7 @@ static bool rayTriangleIntersection(
     *bary_out = Vector3{U,V,W} * rcpDet;
 
     // FIXME better way to get geo normal?
-    *out_hit_normal = normalize(cross(B - A, C - A));
+    *out_hit_normal = normalize(normalA * U + normalB * V + normalC * W);
 
     return true;
 }
@@ -465,6 +474,7 @@ static TriHitInfo triangleIntersect(int32_t leaf_idx,
 
     bool intersects = rayTriangleIntersection(
             fetched.a, fetched.b, fetched.c,
+            fetched.normalA, fetched.normalB, fetched.normalC,
             isect_info.kx,  isect_info.ky, isect_info.kz, 
             isect_info.Sx,  isect_info.Sy, isect_info.Sz, 
             ray_o,
@@ -943,7 +953,7 @@ static __device__ FragmentResult computeFragment(
         // If we are still here, just do normal lighting calculation.
         return FragmentResult {
             .hit = true,
-            .color = finalColor,
+            .color = first_hit.normal,
             .normal = first_hit.normal,
             .depth = first_hit.depth
         };
