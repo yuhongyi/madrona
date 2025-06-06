@@ -19,7 +19,7 @@ def main():
         ),
         rigid_options=gs.options.RigidOptions(enable_collision=False, gravity=(0, 0, 0)),
         renderer = gs.options.renderers.BatchRenderer(
-            use_rasterizer=False,
+            use_rasterizer=True,
             batch_render_res=(1920, 1080),
         ),
     )

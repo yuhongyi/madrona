@@ -30,7 +30,7 @@ def main():
             # constraint_solver=gs.constraint_solver.Newton,
         ),
         renderer = gs.options.renderers.BatchRenderer(
-            use_rasterizer=False,
+            use_rasterizer=True,
             batch_render_res=(512, 512),
         )
     )

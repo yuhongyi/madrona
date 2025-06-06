@@ -52,7 +52,6 @@ class MadronaBatchRendererAdapter:
     geom_data_ids = np.arange(n_vgeom, dtype=np.int32)
     geom_sizes = np.ones((n_vgeom, 3), dtype=np.float32)
     assert num_cameras > 0, "Must have at least one camera for Madrona to work!"
-    #geom_rgba = rigid.vgeoms_info.color.to_numpy()
 
     geom_mat_ids, mesh_texcoord_num, mesh_texcoord_offsets, mesh_texcoord_data, texture_widths, texture_heights, texture_nchans, texture_data, texture_offsets, material_texture_ids, material_rgba, geom_rgba = self.get_material_data(rigid)
 

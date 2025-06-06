@@ -953,7 +953,7 @@ static __device__ FragmentResult computeFragment(
         // If we are still here, just do normal lighting calculation.
         return FragmentResult {
             .hit = true,
-            .color = first_hit.normal,
+            .color = finalColor,
             .normal = first_hit.normal,
             .depth = first_hit.depth
         };
