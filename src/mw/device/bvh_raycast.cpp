@@ -937,6 +937,9 @@ static __device__ FragmentResult computeFragment(
         // Convert to sRGB
         finalColor = linearToSRGB(finalColor);
 
+        // Clamp to 0-1
+        finalColor = Vector3::max(Vector3::zero(), Vector3::min(Vector3::one(), finalColor));
+
         // If we are still here, just do normal lighting calculation.
         return FragmentResult {
             .hit = true,
