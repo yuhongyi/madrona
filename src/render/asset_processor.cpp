@@ -439,7 +439,7 @@ MaterialData initMaterialData(
                         &res_desc, &tex_desc, nullptr));
 
             cpu_mat_data.textures[i] = tex_obj;
-            cpu_mat_data.textureBuffers[i] = mipArray;
+            cpu_mat_data.mipmapTextureBuffers[i] = mipArray;
         }
     }
 
