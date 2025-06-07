@@ -371,6 +371,7 @@ MaterialData initMaterialData(
             width = tex.width;
             height = tex.height; 
 
+            // TODO: Only generate mipmaps for RGBA textures
             // Generate mipmaps
             const uint32_t MAX_MIPS = 16; // Should be enough for any reasonable texture size
             void* mip_data[MAX_MIPS];
@@ -406,8 +407,8 @@ MaterialData initMaterialData(
             }
 
             cudaResourceDesc res_desc = {};
-            res_desc.resType = cudaResourceTypeArray;
-            res_desc.res.array.array = cuda_array;
+            res_desc.resType = cudaResourceTypeMipmappedArray;
+            res_desc.res.mipmap.mipmap = mipArray;
 
             cudaTextureDesc tex_desc = {};
             tex_desc.addressMode[0] = cudaAddressModeWrap;
@@ -424,7 +425,7 @@ MaterialData initMaterialData(
                         &res_desc, &tex_desc, nullptr));
 
             cpu_mat_data.textures[i] = tex_obj;
-            cpu_mat_data.textureBuffers[i] = cuda_array;
+            cpu_mat_data.textureBuffers[i] = mipArray;
         }
     }
 
