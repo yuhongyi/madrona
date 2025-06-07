@@ -317,11 +317,25 @@ MaterialData initMaterialData(
     const imp::SourceTexture *textures,
     uint32_t num_textures)
 {
+    // TODO: Only generate mipmaps for RGBA textures
+    // Count number of BC7 textures and number of non-BC7 textures
+    uint32_t num_non_mipmap_textures = 0;
+    uint32_t num_mipmap_textures = 0;
+    for (uint32_t i = 0; i < num_textures; ++i) {
+        if (textures[i].format == imp::SourceTextureFormat::BC7) {
+            num_mipmap_textures++;
+        } else {
+            num_non_mipmap_textures++;
+        }
+    }
+
     MaterialData cpu_mat_data = {
         .textures = (cudaTextureObject_t *)
             malloc(sizeof(cudaTextureObject_t) * num_textures),
         .textureBuffers = (cudaArray_t *)
-            malloc(sizeof(cudaArray_t) * num_textures),
+            malloc(sizeof(cudaArray_t) * num_non_mipmap_textures),
+        .mipmapTextureBuffers = (cudaMipmappedArray_t *)
+            malloc(sizeof(cudaMipmappedArray_t) * num_mipmap_textures),
         .materials = (Material *)
             malloc(sizeof(Material) * num_materials)
     };
@@ -429,7 +443,8 @@ MaterialData initMaterialData(
         }
     }
 
-    cpu_mat_data.numTextureBuffers = num_textures;
+    cpu_mat_data.numTextureBuffers = num_non_mipmap_textures;
+    cpu_mat_data.numMipmapTextureBuffers = num_mipmap_textures;
 
     for (uint32_t i = 0; i < num_materials; ++i) {
         Material mat = {
