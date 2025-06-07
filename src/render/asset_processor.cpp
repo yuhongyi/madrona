@@ -374,6 +374,7 @@ MaterialData initMaterialData(
             // Generate mipmaps
             const uint32_t MAX_MIPS = 16; // Should be enough for any reasonable texture size
             void* mip_data[MAX_MIPS];
+            memset(mip_data, 0, sizeof(mip_data));
             uint32_t mip_widths[MAX_MIPS];
             uint32_t mip_heights[MAX_MIPS];
             uint32_t num_mips;
@@ -399,7 +400,9 @@ MaterialData initMaterialData(
 
             // Free mipmap data (skip mip level 0 since it points to source data)
             for (uint32_t mip = 1; mip < num_mips; mip++) {
-                free(mip_data[mip]);
+                if (mip_data[mip]) {
+                    free(mip_data[mip]);
+                }
             }
 
             cudaResourceDesc res_desc = {};
