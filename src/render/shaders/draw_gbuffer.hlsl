@@ -108,29 +108,11 @@ PixelOutput frag(in V2F v2f)
     output.position = float4(v2f.position, v2f.dummy * 0.0000001f);
     output.position.a += v2f.metalness;
 
+    // output.color.rgb = v2f.normal.xyz;
+
     if (v2f.texIdx != -1) {
-        // Calculate texture coordinate derivatives for LOD selection
-        float2 ddx_uv = ddx(v2f.uv);
-        float2 ddy_uv = ddy(v2f.uv);
-        
-        // Calculate screen-space footprint
-        float2 footprint = max(abs(ddx_uv), abs(ddy_uv));
-        float footprint_size = max(footprint.x, footprint.y);
-        
-        // Calculate view angle factor
-        float3 view_dir = normalize(v2f.position - viewDataBuffer[push_const.viewIdx].pos);
-        float view_angle = abs(dot(view_dir, v2f.normal));
-        
-        // Calculate distance factor
-        float distance = length(v2f.position - viewDataBuffer[push_const.viewIdx].pos);
-        float distance_factor = log2(max(1.0, distance));
-        
-        // Combine factors to determine LOD level
-        float lod = log2(footprint_size * 1024.0) + distance_factor * 0.5 - view_angle * 0.5;
-        lod = max(0.0, min(8.0, lod)); // Clamp LOD to reasonable range
-        
         output.color *= materialTexturesArray[v2f.texIdx].SampleLevel(
-            linearSampler, float2(v2f.uv.x, 1.f - v2f.uv.y), lod);
+            linearSampler, float2(v2f.uv.x, 1.f - v2f.uv.y), 0);
     }
 
     return output;
