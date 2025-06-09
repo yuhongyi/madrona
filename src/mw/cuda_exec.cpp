@@ -671,6 +671,7 @@ static GPUCompileResults compileCode(
 
         CUmodule mod;
         REQ_CU(cuModuleLoadData(&mod, kernel_cache.cubinStart));
+        printf("Loaded megakernel cache from %s\n", cache_path.c_str());
 
         return {
             .mod = mod,
@@ -1091,6 +1092,7 @@ static BVHKernels buildBVHKernels(const CompileConfig &cfg,
     if (!need_recompile) {
         auto bvh_cache = loadKernelCache<BVHKernelCache>(cache_path);
         REQ_CU(cuModuleLoadData(&mod, bvh_cache.cubinStart));
+        printf("Loaded BVH kernel cache from %s\n", cache_path.c_str());
     }
     else {
         const char *force_debug_env = getenv("MADRONA_MWGPU_FORCE_DEBUG");
@@ -2485,19 +2487,6 @@ MWCudaExecutor::~MWCudaExecutor()
 
     if (impl_->bvhKernels.materialData.materials) {
         REQ_CUDA(cudaFree(impl_->bvhKernels.materialData.materials));
-    }
-
-#if 0
-    if (impl_->bvhKernels.materialData.textureBuffers) {
-        cudaFree(impl_->bvhKernels.materialData.textures);
-    }
-#endif
-
-    for (uint32_t i = 0;
-            i < impl_->bvhKernels.materialData.numTextureBuffers;
-            ++i) {
-        REQ_CUDA(cudaFreeArray(
-            impl_->bvhKernels.materialData.textureBuffers[i]));
     }
 
 #ifdef MADRONA_TRACING
