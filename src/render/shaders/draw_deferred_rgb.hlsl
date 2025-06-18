@@ -27,6 +27,9 @@ RWStructuredBuffer<float> depthOutputBuffer;
 [[vk::binding(6, 0)]]
 SamplerState linearSampler;
 
+[[vk::binding(7, 0)]]
+SamplerState pointSampler;
+
 [[vk::binding(0, 1)]]
 StructuredBuffer<uint> indexBuffer;
 
@@ -458,7 +461,7 @@ void lighting(uint3 idx : SV_DispatchThreadID)
                       float2(depth_dim.x, depth_dim.y);
 
     float depth_in = depthInBuffer[target_idx].SampleLevel(
-                         linearSampler, depth_uv, 0).x;
+                         pointSampler, depth_uv, 0).x;
 
     // Calculate linear depth with reverse-z buffer
     PerspectiveCameraData cam_data = unpackViewData(viewDataBuffer[0]);

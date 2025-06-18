@@ -400,9 +400,11 @@ static PipelineMP<1> makeDrawPipeline(const vk::Device &dev,
 static vk::PipelineShaders makeShaders(const vk::Device &dev,
                                        const char *shader_file,
                                        const char *func_name = "main",
-                                       VkSampler sampler = VK_NULL_HANDLE)
+                                       VkSampler linear_sampler = VK_NULL_HANDLE,
+                                       VkSampler point_sampler = VK_NULL_HANDLE)
 {
-    (void)sampler;
+    (void)linear_sampler;
+    (void)point_sampler;
 
     std::filesystem::path shader_dir =
         std::filesystem::path(STRINGIFY(MADRONA_RENDER_DATA_DIR)) /
@@ -421,7 +423,8 @@ static vk::PipelineShaders makeShaders(const vk::Device &dev,
 static vk::PipelineShaders makeShadersLighting(const vk::Device &dev,
                                        const char *shader_file,
                                        const char *func_name = "main",
-                                       VkSampler repeat_sampler = VK_NULL_HANDLE)
+                                       VkSampler linear_sampler = VK_NULL_HANDLE,
+                                       VkSampler point_sampler = VK_NULL_HANDLE)
 {
     std::filesystem::path shader_dir =
         std::filesystem::path(STRINGIFY(MADRONA_RENDER_DATA_DIR)) /
@@ -441,11 +444,18 @@ static vk::PipelineShaders makeShadersLighting(const vk::Device &dev,
                                        100, VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT 
                                    },
                                    vk::BindingOverride {
-                                       0, 3, VK_NULL_HANDLE,
+                                       0, 1, VK_NULL_HANDLE,
                                        100, VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT
                                    },
                                    vk::BindingOverride {
-                                       0, 4, repeat_sampler, 1, 0
+                                       0, 2, VK_NULL_HANDLE,
+                                       100, VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT
+                                   },
+                                   vk::BindingOverride {
+                                       0, 6, linear_sampler, 1, 0
+                                   },
+                                   vk::BindingOverride {
+                                       0, 7, point_sampler, 1, 0
                                    },
                                 }));
 }
@@ -456,7 +466,8 @@ static PipelineMP<1> makeComputePipeline(const vk::Device &dev,
                                             uint32_t num_pools,
                                             uint32_t push_constant_size,
                                             uint32_t num_descriptor_sets,
-                                            VkSampler repeat_sampler,
+                                            VkSampler linear_sampler,
+                                            VkSampler point_sampler,
                                             const char *shader_file,
                                             bool depth_only = false,
                                             const char *func_name = "main",
@@ -464,7 +475,7 @@ static PipelineMP<1> makeComputePipeline(const vk::Device &dev,
 {
     (void)depth_only;
 
-    vk::PipelineShaders shader = make_shaders_proc(dev, shader_file, func_name, repeat_sampler);
+    vk::PipelineShaders shader = make_shaders_proc(dev, shader_file, func_name, linear_sampler, point_sampler);
 
     VkPushConstantRange push_const = {
         .stageFlags = VK_SHADER_STAGE_COMPUTE_BIT,
@@ -1418,13 +1429,13 @@ BatchRenderer::Impl::Impl(const Config &cfg,
           makeComputePipeline(
               dev, rctx.pipelineCache, 1,
               sizeof(uint32_t) * 2,
-              cfg.numFrames * consts::numDrawCmdBuffers, rctx.repeatSampler,
+              cfg.numFrames * consts::numDrawCmdBuffers, rctx.repeatSampler, rctx.pointSampler,
               "visualize_tris.hlsl", false, "visualize", makeShaders) :
           Optional<PipelineMP<1>>::none()),
       lighting(cfg.enableBatchRenderer ?
           makeComputePipeline(dev, rctx.pipelineCache, 4, 
               sizeof(shader::DeferredLightingPushConstBR),
-              consts::numDrawCmdBuffers * cfg.numFrames, rctx.repeatSampler, 
+              consts::numDrawCmdBuffers * cfg.numFrames, rctx.repeatSampler, rctx.pointSampler,
               getDrawDeferredPath(!depthOnly), depthOnly, "lighting", makeShadersLighting) :
           Optional<PipelineMP<1>>::none()),
       batchFrames(cfg.numFrames),
@@ -2607,5 +2618,4 @@ const float * BatchRenderer::getDepthCUDAPtr() const
     return (float *)impl->batchFrames[0].depthOutputCUDA.getDevicePointer();
 #endif
 }
-
 }
