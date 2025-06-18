@@ -24,6 +24,10 @@ struct LayeredTarget {
     render::vk::LocalImage vizBuffer;
     VkImageView vizBufferView;
 
+    // Normal
+    render::vk::LocalImage normal;
+    VkImageView normalView;
+
     // Depth
     render::vk::LocalImage depth;
     VkImageView depthView;
@@ -93,6 +97,7 @@ struct BatchRenderer {
     BatchImportedBuffers &getImportedBuffers(uint32_t frame_id);
 
     const vk::LocalBuffer & getRGBBuffer() const;
+    const vk::LocalBuffer & getNormalBuffer() const;
     const vk::LocalBuffer & getDepthBuffer() const;
 
     // Get the semaphore that the viewer renderer has to wait on.
@@ -101,6 +106,7 @@ struct BatchRenderer {
     VkSemaphore getLatestWaitSemaphore();
 
     const uint8_t * getRGBCUDAPtr() const;
+    const uint8_t * getNormalCUDAPtr() const;
     const float * getDepthCUDAPtr() const;
 };
 

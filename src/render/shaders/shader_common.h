@@ -262,6 +262,13 @@ struct DrawData {
     uint32_t color;
 };
 
+struct OutputOptions {
+    uint32_t outputRGB;
+    uint32_t outputDepth;
+    uint32_t outputNormal;
+    uint32_t outputSegmentation
+};
+
 #if 0
 struct PackedDrawInstanceData {
     float4 packed[5];

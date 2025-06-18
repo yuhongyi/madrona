@@ -10,15 +10,21 @@ DeferredLightingPushConstBR pushConst;
 RWTexture2DArray<float4> vizBuffer[];
 
 [[vk::binding(1, 0)]]
-RWStructuredBuffer<uint32_t> rgbOutputBuffer;
+Texture2D<float4> normalInBuffer[];
 
 [[vk::binding(2, 0)]]
-RWStructuredBuffer<float> depthOutputBuffer;
-
-[[vk::binding(3, 0)]]
 Texture2D<float> depthInBuffer[];
 
+[[vk::binding(3, 0)]]
+RWStructuredBuffer<uint32_t> rgbOutputBuffer;
+
 [[vk::binding(4, 0)]]
+RWStructuredBuffer<float4> normalOutputBuffer;
+
+[[vk::binding(5, 0)]]
+RWStructuredBuffer<float> depthOutputBuffer;
+
+[[vk::binding(6, 0)]]
 SamplerState linearSampler;
 
 [[vk::binding(0, 1)]]

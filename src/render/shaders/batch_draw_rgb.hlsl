@@ -43,6 +43,9 @@ Texture2D<float4> materialTexturesArray[];
 [[vk::binding(1, 3)]]
 SamplerState linearSampler;
 
+[[vk::binding(2, 3)]]
+StructuredBuffer<OutputOptions> outputOptionsBuffer;
+
 struct V2F {
     [[vk::location(0)]] float4 position : SV_Position;
     [[vk::location(1)]] float3 worldPos : TEXCOORD0;
@@ -125,6 +128,7 @@ void vert(in uint vid : SV_VertexID,
 
 struct PixelOutput {
     float4 rgbOut : SV_Target0;
+    float4 normalOut : SV_Target1;
 };
 
 [shader("pixel")]
@@ -133,56 +137,67 @@ PixelOutput frag(in V2F v2f,
 {
     PixelOutput output;
 
-    if (v2f.materialIdx == -2) {
-        output.rgbOut = hexToRgb(v2f.color);
+    OutputOptions outputOptions = outputOptionsBuffer[0];
 
-        return output;
-    } else {
-        MaterialData mat_data = materialBuffer[v2f.materialIdx];
-        float4 color = mat_data.color;
-        
-        if (mat_data.textureIdx != -1) {
-            color *= materialTexturesArray[mat_data.textureIdx].Sample(
-                    linearSampler, v2f.uv);
-        }
+    float3 normal = normalize(v2f.worldNormal);
 
-        float3 normal = normalize(v2f.worldNormal);
-        float3 totalLighting = 0;
-        uint numLights = pushConst.numLights;
+    if (outputOptions.outputNormal) {
+        output.normalOut = float4(normal, 1.0);
+    }
 
-        [unroll(1)]
-        for (uint i = 0; i < numLights; i++) {
-            ShaderLightData light = unpackLightData(lightDataBuffer[v2f.worldIdx * numLights + i]);
-            if(!light.active) {
-                continue;
-            }
+    if (!outputOptions.outputRGB) {
+        output.rgbOut = float4(0.0, 0.0, 0.0, 1.0);
+    }
+    else {
+
+        if (v2f.materialIdx == -2) {
+            output.rgbOut = hexToRgb(v2f.color);
+        } else {
+            MaterialData mat_data = materialBuffer[v2f.materialIdx];
+            float4 color = mat_data.color;
             
-            float3 ray_dir;            
-            if (light.isDirectional) { // Directional light
-                ray_dir = normalize(light.direction.xyz);
-            } else { // Spot light
-                ray_dir = normalize(v2f.worldPos.xyz - light.position.xyz);
-                if(light.cutoffAngle >= 0) {
-                    float angle = acos(dot(normalize(ray_dir), normalize(light.direction.xyz)));
-                    if (abs(angle) > light.cutoffAngle) {
-                        continue;
+            if (mat_data.textureIdx != -1) {
+                color *= materialTexturesArray[mat_data.textureIdx].Sample(
+                        linearSampler, v2f.uv);
+            }
+
+            float3 totalLighting = 0;
+            uint numLights = pushConst.numLights;
+
+            [unroll(1)]
+            for (uint i = 0; i < numLights; i++) {
+                ShaderLightData light = unpackLightData(lightDataBuffer[v2f.worldIdx * numLights + i]);
+                if(!light.active) {
+                    continue;
+                }
+                
+                float3 ray_dir;            
+                if (light.isDirectional) { // Directional light
+                    ray_dir = normalize(light.direction.xyz);
+                } else { // Spot light
+                    ray_dir = normalize(v2f.worldPos.xyz - light.position.xyz);
+                    if(light.cutoffAngle >= 0) {
+                        float angle = acos(dot(normalize(ray_dir), normalize(light.direction.xyz)));
+                        if (abs(angle) > light.cutoffAngle) {
+                            continue;
+                        }
                     }
                 }
+
+                float n_dot_l = max(0.0, dot(normal, -ray_dir));
+                totalLighting += n_dot_l * light.intensity;
             }
 
-            float n_dot_l = max(0.0, dot(normal, -ray_dir));
-            totalLighting += n_dot_l * light.intensity;
+            float3 lighting = totalLighting * color.rgb;
+
+            // Add ambient term
+            float ambient = 0.2;
+            lighting += color.rgb * ambient;
+            
+            color.rgb = lighting;
+            output.rgbOut = color;
         }
-
-        float3 lighting = totalLighting * color.rgb;
-
-        // Add ambient term
-        float ambient = 0.2;
-        lighting += color.rgb * ambient;
-        
-        color.rgb = lighting;
-        output.rgbOut = color;
-
-        return output;
     }
+
+    return output;
 }
