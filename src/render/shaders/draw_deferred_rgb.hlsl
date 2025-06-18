@@ -19,7 +19,7 @@ Texture2D<float> depthInBuffer[];
 RWStructuredBuffer<uint32_t> rgbOutputBuffer;
 
 [[vk::binding(4, 0)]]
-RWStructuredBuffer<float4> normalOutputBuffer;
+RWStructuredBuffer<uint32_t> normalOutputBuffer;
 
 [[vk::binding(5, 0)]]
 RWStructuredBuffer<float> depthOutputBuffer;
@@ -402,6 +402,11 @@ float3 getOutgoingRay(float2 target_pixel, float2 target_dim, in PerspectiveCame
     return normalize(dir);
 }
 
+uint32_t float3ToUint32(float3 v)
+{
+    return (uint32_t)(v.x * 255.0f) | ((uint32_t)(v.y * 255.0f) << 8) | ((uint32_t)(v.z * 255.0f) << 16) | (255 << 24);
+}
+
 float linearToSRGB(float v)
 {
     if (v <= 0.00031308f) {
@@ -418,9 +423,7 @@ uint32_t linearToSRGB8(float3 rgb)
         linearToSRGB(rgb.y), 
         linearToSRGB(rgb.z));
 
-    uint3 quant = (uint3)(255 * clamp(srgb, 0.f, 1.f));
-
-    return quant.r | (quant.g << 8) | (quant.b << 16) | ((uint32_t)255 << 24);
+    return float4ToUint32(float4(srgb, 1.0f));
 }
 
 // idx.x is the x coordinate of the image
@@ -475,10 +478,14 @@ void lighting(uint3 idx : SV_DispatchThreadID)
 
     out_color.x += zeroDummy();
 
+    float3 out_normal = normalInBuffer[target_idx].Load(vbuffer_pixel + 
+                     uint3(x_pixel_offset, y_pixel_offset, 0)).rgb;
+
     uint32_t out_pixel_idx =
         view_idx * pushConst.viewWidth * pushConst.viewHeight +
         idx.y * pushConst.viewWidth + idx.x;
 
-    rgbOutputBuffer[out_pixel_idx] = linearToSRGB8(out_color); 
+    rgbOutputBuffer[out_pixel_idx] = linearToSRGB8(out_color);
+    normalOutputBuffer[out_pixel_idx] = float3ToUint32(out_normal);
     depthOutputBuffer[out_pixel_idx] = linear_depth;
 }

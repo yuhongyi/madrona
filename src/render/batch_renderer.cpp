@@ -917,6 +917,7 @@ static void makeBatchFrame(vk::Device& dev,
                 .imageLayout = VK_IMAGE_LAYOUT_GENERAL,
             };
 
+            // TODO: Bind once with array.  All use textures.  Do texture.load in shader.
             vk::DescHelper::storageImage(lighting_desc_updates[i*3],
                                          lighting_set, 
                                          &vbuffer_infos[i],
