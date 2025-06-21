@@ -43,6 +43,9 @@ void Sim::registerTypes(ECSRegistry &registry, const Config &cfg)
         (uint32_t)ExportID::LightCutoffAngles);
     registry.exportColumn<LightEntity, render::LightDescIntensity>(
         (uint32_t)ExportID::LightIntensities);
+
+    registry.exportColumn<OutputOptionsEntity, render::OutputOptions>(
+        (uint32_t)ExportID::OutputOptions);
      
     if (cfg.useDebugCamEntity) {
         registry.registerArchetype<DebugCameraEntity>();

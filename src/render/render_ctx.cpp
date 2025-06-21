@@ -576,7 +576,11 @@ static EngineInterop setupEngineInterop(Device &dev,
                                         uint32_t max_lights_per_world,
                                         uint32_t render_width,
                                         uint32_t render_height,
-                                        VoxelConfig voxel_config)
+                                        VoxelConfig voxel_config,
+                                        bool output_rgb,
+                                        bool output_normal,
+                                        bool output_depth,
+                                        bool output_segmentation)
 {
     (void)dev;
 
@@ -875,7 +879,11 @@ static EngineInterop setupEngineInterop(Device &dev,
         .maxViewsPerworld = max_views_per_world,
         .maxInstancesPerWorld = max_instances_per_world,
         .maxLightsPerWorld = max_lights_per_world,
-        .isGPUBackend = gpu_input
+        .isGPUBackend = gpu_input,
+        .outputRGB = output_rgb,
+        .outputNormal = output_normal,
+        .outputDepth = output_depth,
+        .outputSegmentation = output_segmentation,
     };
 
     const RenderECSBridge *gpu_bridge = nullptr;
@@ -1336,7 +1344,8 @@ RenderContext::RenderContext(
           dev, alloc, cfg.execMode == ExecMode::CUDA, cfg.numWorlds,
           cfg.maxViewsPerWorld, cfg.maxInstancesPerWorld,
           cfg.maxLightsPerWorld,
-          br_width_, br_height_, cfg.voxelCfg)),
+          br_width_, br_height_, cfg.voxelCfg,
+          cfg.outputRGB, cfg.outputNormal, cfg.outputDepth, cfg.outputSegmentation)),
       lights_(InternalConfig::maxLights),
       loaded_assets_(0),
       sky_(loadSky(dev, alloc, renderQueue)),

@@ -17,6 +17,9 @@ StructuredBuffer<uint32_t> instanceOffsets;
 [[vk::binding(3, 0)]]
 StructuredBuffer<PackedLightData> lightDataBuffer;
 
+[[vk::binding(4, 0)]]
+StructuredBuffer<OutputOptions> outputOptionsBuffer;
+
 // Draw information
 [[vk::binding(0, 1)]]
 RWStructuredBuffer<uint32_t> drawCount;
@@ -42,9 +45,6 @@ Texture2D<float4> materialTexturesArray[];
 
 [[vk::binding(1, 3)]]
 SamplerState linearSampler;
-
-[[vk::binding(2, 3)]]
-StructuredBuffer<OutputOptions> outputOptionsBuffer;
 
 struct V2F {
     [[vk::location(0)]] float4 position : SV_Position;

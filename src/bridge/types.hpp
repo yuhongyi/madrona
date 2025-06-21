@@ -21,6 +21,7 @@ using madrona::math::Vector3;
 using madrona::math::Quat;
 using madrona::render::MaterialOverride;
 using madrona::render::ColorOverride;
+using madrona::render::OutputOptions;
 
 enum class RenderPrimObjectIDs : uint32_t {
     DebugCam = 0,
@@ -73,6 +74,10 @@ struct DebugCameraEntity : public madrona::Archetype<
     ObjectInstance,
     madrona::render::Renderable,
     madrona::render::RenderCamera
+> {};
+
+struct OutputOptionsEntity : public madrona::Archetype<
+    madrona::render::OutputOptions
 > {};
 
 }

@@ -37,6 +37,11 @@ public:
         ExecMode execMode;
 
         VoxelConfig voxelCfg;
+
+        bool outputRGB;
+        bool outputNormal;
+        bool outputDepth;
+        bool outputSegmentation;
     };
 
     RenderManager(APIBackend *render_backend,
@@ -56,9 +61,6 @@ public:
 
     const RenderECSBridge * bridge() const;
     inline RenderContext & renderContext() const;
-
-    // Processes the ECS's output in order to be ready for rendering.
-    void readECS();
 
     // Draw the batched output for all worlds
     void batchRender();

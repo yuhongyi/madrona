@@ -72,6 +72,7 @@ public:
         uint32_t batchRenderViewHeight;
         bool addCamDebugGeometry = false;
         bool useRT = false;
+        int numOutputOptions = 4;  // Hardcoded to 4 for now, RGB, Normal, Depth, Segmentation
     };
 
     MGR_EXPORT Manager(
@@ -99,7 +100,8 @@ public:
     MGR_EXPORT void render(const madrona::math::Vector3 *geom_pos,
                            const madrona::math::Quat *geom_rot,
                            const madrona::math::Vector3 *cam_pos,
-                           const madrona::math::Quat *cam_rot);
+                           const madrona::math::Quat *cam_rot,
+                           const bool *output_options);
      
     // These functions export Tensor objects that link the ECS
     // simulation state to the python bindings / PyTorch tensors (src/bindings.cpp)
@@ -110,6 +112,7 @@ public:
     MGR_EXPORT madrona::py::Tensor cameraRotationsTensor() const;
 
     MGR_EXPORT madrona::py::Tensor rgbTensor() const;
+    MGR_EXPORT madrona::py::Tensor normalTensor() const;
     MGR_EXPORT madrona::py::Tensor depthTensor() const;
 
     MGR_EXPORT uint32_t numWorlds() const;

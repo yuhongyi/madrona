@@ -33,6 +33,11 @@ struct RenderECSBridge {
     uint32_t maxInstancesPerWorld;
     uint32_t maxLightsPerWorld;
     bool isGPUBackend;
+
+    bool outputRGB;
+    bool outputNormal;
+    bool outputDepth;
+    bool outputSegmentation;
 };
 
 }

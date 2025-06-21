@@ -124,6 +124,17 @@ struct LightArchetype : public Archetype<
     LightDesc
 > {};
 
+struct alignas(16) OutputOptions {
+    bool outputRGB;
+    bool outputNormal;
+    bool outputDepth;
+    bool outputSegmentation;
+};
+
+struct OutputOptionsArchetype : public Archetype<
+    OutputOptions
+> {};
+
 struct MaterialOverride {
     // These are values that matID can take on if not some override material ID.
     enum {

@@ -263,10 +263,10 @@ struct DrawData {
 };
 
 struct OutputOptions {
-    uint32_t outputRGB;
-    uint32_t outputDepth;
-    uint32_t outputNormal;
-    uint32_t outputSegmentation
+    uint32_t outputRGB = 0;
+    uint32_t outputDepth = 0;
+    uint32_t outputNormal = 0;
+    uint32_t outputSegmentation = 0;
 };
 
 #if 0

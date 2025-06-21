@@ -49,6 +49,10 @@ struct RenderingSystemState {
     uint32_t numBVHs;
 
     bool enableRaycaster;
+    bool *outputRGB;
+    bool *outputNormal;
+    bool *outputDepth;
+    bool *outputSegmentation;
 };
 
 static inline uint32_t leftShift3(uint32_t x)

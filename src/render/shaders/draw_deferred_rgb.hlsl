@@ -60,6 +60,9 @@ Texture3D<float4> scatteringLUT;
 [[vk::binding(4, 3)]]
 StructuredBuffer<SkyData> skyBuffer;
 
+[[vk::binding(5, 3)]]
+StructuredBuffer<OutputOptions> outputOptionsBuffer;
+
 
 #include "lighting.h"
 
